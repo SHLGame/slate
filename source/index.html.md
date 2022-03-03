@@ -90,18 +90,41 @@ available | true | If set to false, the result will include kittens that have al
 
  ![image ERC20关系图](./images/ERC20.png)
 
+ 对 delegatecall 熟悉的人应该知道：合约A通过delegatecall调用合约B，交易会按照合约B的逻辑执行，但是执行的上下文和更改的状态都在合约A中，我们称合约A为代理合约，合约B为逻辑合约。`GameERC20Proxy`就是代理合约，存储token的状态，用户可以通过`GameERC20Factory`创建任意个`GameERC20Proxy`的实例，每个实例就是一个token，所有通过`GameERC20Factory`创建出来的token的逻辑合约都是`GameERC20Token`。
+
 ### GameERC20Factory
 
 #### Functions
 
-> test
+##### generate
+
+generate是用来创建新代币的方法
+
+Parameters:
+
+Name | Type | Description
+--------- | ------- | -----------
+_name | string | token's name
+_symbol | string | token's symbol
+_cap | uint256 | 代币的最大容量
+
+Return Values:
+
+Name | Type | Description
+--------- | ------- | -----------
+_index | uint256 | token's maximum capacity
 
 ```solidity
+/// @notice the function to mint a new vault
+/// @param _name the desired name of the vault
+/// @param _symbol the desired symbol of the vault
+/// @param _cap the maximum capacity of the vault
+/// @return _index the index of the vault in vaults
 function generate(
     string memory _name,
     string memory _symbol,
     uint256 _cap
-) external whenNotPaused returns (uint256) {
+) external whenNotPaused returns (uint256 _index) {
     bytes memory _initializationCallData =
     abi.encodeWithSignature(
         "initialize(string,string,uint256,address)",
@@ -110,14 +133,17 @@ function generate(
         _cap,
         msg.sender
     );
+
     address vault = address(
         new GameErc20Proxy(
             logic,
             _initializationCallData
         )
     );
+
     vaults[vaultCount] = vault;
     vaultCount++;
+
     return vaultCount - 1;
 }
 ```
