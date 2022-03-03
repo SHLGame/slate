@@ -98,21 +98,6 @@ available | true | If set to false, the result will include kittens that have al
 
 ##### generate
 
-generate是用来创建新代币的方法
-
-Parameters:
-
-Name | Type | Description
---------- | ------- | -----------
-_name | string | token's name
-_symbol | string | token's symbol
-_cap | uint256 | 代币的最大容量
-
-Return Values:
-
-Name | Type | Description
---------- | ------- | -----------
-_index | uint256 | token's maximum capacity
 
 ```solidity
 /// @notice the function to mint a new vault
@@ -147,6 +132,24 @@ function generate(
     return vaultCount - 1;
 }
 ```
+
+generate是用来创建新代币的方法
+
+Parameters:
+
+Name | Type | Description
+--------- | ------- | -----------
+_name | string | token's name
+_symbol | string | token's symbol
+_cap | uint256 | 代币的最大容量
+
+Return Values:
+
+Name | Type | Description
+--------- | ------- | -----------
+_index | uint256 | token's maximum capacity
+
+
 使用了不可升级的代理合约，通过代理调用同一个
 
 
