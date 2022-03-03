@@ -149,10 +149,39 @@ fallback() external payable {
 }
 ```
 
- 
+ fallback是实现代理合约的关键函数，代理合约的概念是在[EIP1167协议](https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1167.md)中产生，有如下几个特性：
+
+ 1. 调用成功后返回true，无法管理返回的数据；
+ 2. 当调用的方法在代理合约中不存在时，合约会调用`fallback`函数。可以编写`fallback`函数的逻辑处理这种情况。代理合约使用自定义的`fallback`函数将调用请求重定向到逻辑合同中。
+ 3. 每当合约A将调用代理到另一个合同B时，它都会在合约A的上下文中执行合约B的代码。这意味着将保留msg.value和msg.sender值，并且每次存储修改都会影响合约A。
+
+ 也可以参考Openzipplin的合约库具体实现[Openzeppelin Proxy](https://github.com/OpenZeppelin/openzeppelin-labs/blob/master/upgradeability_using_eternal_storage/contracts/Proxy.sol)
+
+### GameERC20Token
+
+```solidity
+function mint(address account, uint256 amount) public onlyOwner {
+  if (totalSupply() + amount > cap)
+      amount = cap - totalSupply();
+  _mint(account, amount);
+}
+```
+
+ 拥有owner权限的地址铸造代币的方法，铸造的总数量将不可以超过预设的总供应量
+
+Parameters:
+
+Name | Type | Description
+--------- | ------- | -----------
+account | address | 接收铸造代币的地址
+amount | uint256 | 铸造的数量
 
 
-## 多游戏通用的 ERC721 token contract
+## 多游戏通用的 NFT token contract
+
+ 关于connecxion的NFT，我们创建了一个适用于GameFi的NFT新协议[Non-fungible Token for GameFi](https://github.com/bnb-chain/BEPs/pull/129)。
+
+### 
 
 ## 金库合约
 
