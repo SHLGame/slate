@@ -2,10 +2,7 @@
 title: API Reference
 
 language_tabs: # must be one of https://git.io/vQNgJ
-  - shell
-  - ruby
-  - python
-  - javascript
+  - solidity
 
 toc_footers:
   - <a href='#'>Sign Up for a Developer Key</a>
@@ -94,17 +91,37 @@ available | true | If set to false, the result will include kittens that have al
 
 ### GameERC20Factory
 
+#### Storage variable
+
+##### vaultCount
+
+```solidity
+uint256 public vaultCount;
+```
+
+ vaultCount表示已经创建的token总数
+
+##### vaults
+
+```solidity
+mapping(uint256 => address) public vaults;
+```
+
+ vaults存储已经创建的token地址
+
+##### logic
+
+```solidity
+address public immutable logic;
+```
+
+ logic是所有代币的逻辑合约地址，使用不可变的变量存储逻辑合约地址保证每个工厂创建出来的代币逻辑合约都是一样的。
+
 #### Functions
 
 ##### generate
 
-
 ```solidity
-/// @notice the function to mint a new vault
-/// @param _name the desired name of the vault
-/// @param _symbol the desired symbol of the vault
-/// @param _cap the maximum capacity of the vault
-/// @return _index the index of the vault in vaults
 function generate(
     string memory _name,
     string memory _symbol,
@@ -149,9 +166,43 @@ Name | Type | Description
 --------- | ------- | -----------
 _index | uint256 | token's maximum capacity
 
+### GameErc20Proxy
 
-使用了不可升级的代理合约，通过代理调用同一个
+#### Storage variable
 
+##### logic
+
+```solidity
+address public immutable logic;
+```
+
+ logic是所有代币的逻辑合约地址，使用不可变的变量存储逻辑合约地址保证token的合约逻辑不可以更改，可升级的合约就是通过改变logic合约实现的。
+
+#### Functions
+
+##### fallback
+
+```solidity
+fallback() external payable {
+    address _impl = logic;
+    assembly {
+        let ptr := mload(0x40)
+        calldatacopy(ptr, 0, calldatasize())
+        let result := delegatecall(gas(), _impl, ptr, calldatasize(), 0, 0)
+        let size := returndatasize()
+        returndatacopy(ptr, 0, size)
+        switch result
+            case 0 {
+                revert(ptr, size)
+            }
+            default {
+                return(ptr, size)
+            }
+    }
+}
+```
+
+ 
 
 
 ## 多游戏通用的 ERC721 token contract
