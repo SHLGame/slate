@@ -179,9 +179,97 @@ amount | uint256 | 铸造的数量
 
 ## 多游戏通用的 NFT token contract
 
+ Loot曾经被定义为NFT的新范式。在合约代码层面，Loot的创新在于它将NFT的属性写在去中心化系统上，很好的解决了传统NFT的Metadata可以被开发者随意变更的问题。在形象艺术方面，Loot刻意将图片省略，使得不同的作者可以各自发挥想象力，用不同的画面来描述同一个Loot。
+
+ 虽然Loot相较于传统NFT有了很大的进步，但是Loot也有一些不足。Loot的属性种类十分有限，也十分具体。举个例子：第一代Loot中有一个属性是“战斧”，尽管画家们可以任意设计“战斧”的形象，但是它只能是战斧，这样就将画家们的想象力禁锢在这一件事物中。
+
+ 我们基于Loot的优缺点，做了进一步的创新，使用数字来代替Loot中的文字属性，并且单个NFT拥有属性的数量将不再受限制。这样，同一个NFT将可以在不同的故事剧本中成为完全不一样的角色，也为成为不同游戏世界的互通的桥梁。
+
  关于connecxion的NFT，我们创建了一个适用于GameFi的NFT新协议[Non-fungible Token for GameFi](https://github.com/bnb-chain/BEPs/pull/129)。
 
-### 
+### Storage variable
+
+> 存储属性的数据结构
+
+```solidity
+struct AttributeBaseData {
+    uint8 decimal;
+    bool exist;
+}
+
+struct AttributeData {
+    uint128 attrID;
+    uint128 attrValue;
+}
+
+// attrID => decimal
+mapping(uint128 => AttributeBaseData) internal _attrBaseData;
+// tokenID => attribute data
+mapping(uint256 => AttributeData[]) internal _attrData;
+```
+
+`AttributeBaseData`存储的是单个属性的精度，为了解决小数问题。
+
+`AttributeData`存储的是属性ID和属性值
+
+`_attrBaseData`是一个键值对，key为属性ID，值为属性的基础数据（精度、是否被创建），用来查询属性的精度
+
+`_attrData`也是一个键值对，key为tokenID，值为此NFT具有的属性数组
+
+### Functions
+
+#### tokenURI
+
+> 通过SVG展示NFT属性的方法
+
+```solidity
+function tokenURI(uint256 tokenID) override public view returns (string memory) {
+    AttributeData[] memory attrData = _attrData[tokenID];
+
+    string memory output = '<svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMinYMin meet" viewBox="0 0 350 350"><style>.base { fill: white; font-family: serif; font-size: 14px; }</style><rect width="100%" height="100%" fill="black" /><text x="10" y="20" class="base">ID</text><text x="80" y="20" class="base">Value</text><text x="185" y="20" class="base">ID</text><text x="255" y="20" class="base">Value';
+
+    string memory p1 = '</text><text x="10" y="';
+    string memory p2 = '</text><text x="80" y="';
+    string memory p3 = '</text><text x="185" y="';
+    string memory p4 = '</text><text x="255" y="';
+    string memory p5 = '" class="base">';
+
+    bytes memory tb;
+    for (uint256 i; i < _attrData[tokenID].length; i++) {
+        uint128 id = attrData[i].attrID;
+        uint128 value = attrData[i].attrValue;
+        if (i % 2 == 0) {
+            string memory y = toString(40 + 20 * i / 2);
+            tb = abi.encodePacked(tb, p1, y, p5, toString(id), p2, y, p5, toString(value));
+        } else {
+            string memory y = toString(40 + 20 * (i - 1) / 2);
+            tb = abi.encodePacked(tb, p3, y, p5, toString(id), p4, y, p5, toString(value));
+        }
+    }
+    tb = abi.encodePacked(tb, '</text></svg>');
+
+    string memory json = Base64.encode(bytes(string(abi.encodePacked('{"name": "Bag #', toString(tokenID),
+        '", "description": "GameLoot is a general NFT for games. Images, attribute name and other functionality are intentionally omitted for each game to interprets. You can use gameLoot as you like in a variety of games.", "image": "data:image/svg+xml;base64,',
+        Base64.encode(abi.encodePacked(output, tb)), '"}'))));
+    output = string(abi.encodePacked('data:application/json;base64,', json));
+
+    return output;
+}
+```
+
+ 这里同样采用Loot的方式，使用SVG展示NFT的属性。
+ 
+Parameters:
+
+Name | Type | Description
+--------- | ------- | -----------
+tokenID | uint256 | NFT 的唯一标识
+
+Return Values:
+
+Name | Type | Description
+--------- | ------- | -----------
+output | string | SVG数据经过Base64编码后的数据
 
 ## 金库合约
 
@@ -190,8 +278,6 @@ amount | uint256 | 铸造的数量
 ### ERC721 金库合约
 
 ## 交易市场合约
-
-## 荷兰拍卖合约
 
 # 控件列表
 
