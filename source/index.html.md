@@ -66,7 +66,7 @@ address public immutable logic;
 
 #### Functions
 
-##### generate
+## Generate
 
 ```solidity
 function generate(
@@ -97,7 +97,7 @@ function generate(
 }
 ```
 
-generate是用来创建新代币的方法
+Generate is a function to create new token
 
 Parameters:
 
@@ -105,26 +105,26 @@ Name | Type | Description
 --------- | ------- | -----------
 _name | string | token's name
 _symbol | string | token's symbol
-_cap | uint256 | 代币的最大容量
+_cap | uint256 | token’s maximum amount
 
 Return Values:
 
 Name | Type | Description
 --------- | ------- | -----------
-_index | uint256 | 当前代币在已创建代币数组中的下标
+_index | uint256 | token index number in the underlying set 
 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
 
-
-
-
-
-
-
-
-
-
-
-### GameErc20Proxy
+## GameErc20Proxy
 
 #### Storage variable
 
