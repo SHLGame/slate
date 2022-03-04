@@ -429,11 +429,34 @@ values_ | uint128[] | 需要设置的对应属性的新值集合，每个元素�
 
 ## 金库合约
 
+> 其中一个使用ecrecover指令恢复签名者的方法
+
+```solidity
+function signatureWallet(
+    address _wallet,
+    address _this,
+    address _token,
+    uint256 _tokenID,
+    uint256 _nonce,
+    uint128[] memory _attrIDs,
+    uint128[] memory _attrValues,
+    uint256[] memory _attrIndexesUpdate,
+    uint128[] memory _attrValuesUpdate,
+    uint256[] memory _attrIndexesRMs,
+    bytes memory _signature
+) internal pure returns (address){
+    bytes32 hash = keccak256(
+        abi.encode(_wallet, _this, _token, _tokenID, _nonce, _attrIDs, _attrValues, _attrIndexesUpdate, _attrValuesUpdate, _attrIndexesRMs)
+    );
+    return ECDSA.recover(ECDSA.toEthSignedMessageHash(hash), _signature);
+}
+```
+
  金库合约是区块链系统与中心化游戏系统交互的关口，所有从区块链上充值到游戏内部的资产(包括FT和NFT)都是通过将资产锁定在treasure合约中来实现的；同样的，所有从游戏内部提现的资产也是通过解锁treasure合约中的资产来实现的。提现流程图如下：
 
  ![image](./images/withdraw.png)
 
- 从图中可以看出，用户提现是通过签名机来控制的，ecrecover指令可以恢复签名数据的签名者地址，这样就能验证签名数据的真伪；另外，为了防止提现交易数据被攻击者恶意操控，导致NFT被盗取等事故发生，被签名的数据包含如下内容：
+ 从图中可以看出，用户需要签名才可以发出有效提现交易。签名在合约中的应用有两方面：ecrecover指令可以恢复签名数据的签名者地址，这样就能验证签名数据的真伪；另外，提现方法是可以被任何用户调用的，为了保证交易可以符合预期地被确认，签名机会对如下数据进行签名：
 
  - 接收者地址，为了防止错误的地址接收到从treasure合约提现出的资产
  - 金库合约地址，为了防止签名在另一个金库合约重用
@@ -441,6 +464,7 @@ values_ | uint128[] | 需要设置的对应属性的新值集合，每个元素�
  - 不重复的随机数，确保此签名只能够使用一次
  - FT的数量，用来控制提现出的金额
  - NFT的tokenID，用来确保将正确的NFT提出
+ - NFT属性更新后的数据
 
 ### ERC20 金库合约
 
