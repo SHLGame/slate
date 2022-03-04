@@ -113,6 +113,17 @@ Name | Type | Description
 --------- | ------- | -----------
 _index | uint256 | 当前代币在已创建代币数组中的下标
 
+
+
+
+
+
+
+
+
+
+
+
 ### GameErc20Proxy
 
 #### Storage variable
