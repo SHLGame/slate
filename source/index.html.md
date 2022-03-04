@@ -111,7 +111,7 @@ Return Values:
 
 Name | Type | Description
 --------- | ------- | -----------
-_index | uint256 | token's maximum capacity
+_index | uint256 | 当前代币在已创建代币数组中的下标
 
 ### GameErc20Proxy
 
@@ -467,6 +467,24 @@ function signatureWallet(
  - NFT属性更新后的数据
 
 ### ERC20 金库合约
+
+#### Functions
+
+##### upChain
+
+> 
+
+```solidity
+
+```
+
+Parameters:
+
+Name | Type | Description
+--------- | ------- | -----------
+tokenID_ | uint256 | NFT 的唯一标识
+attrIndexes_ | uint256[] | 对应属性在NFT属性列表中的下标数组
+values_ | uint128[] | 需要设置的对应属性的新值集合，每个元素下标与attrIndexes_元素的对应
 
 ### ERC721 金库合约
 
