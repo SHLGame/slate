@@ -271,6 +271,162 @@ Name | Type | Description
 --------- | ------- | -----------
 output | string | SVG数据经过Base64编码后的数据
 
+#### create
+
+> 创建单个属性
+
+```solidity
+function create(uint128 attrID_, uint8 decimals_) override public onlyOwner {
+    super.create(attrID_, decimals_);
+}
+```
+
+ 只有owner拥有属性的创建权限，已经存在的属性ID不可以被再次创建。
+ 
+Parameters:
+
+Name | Type | Description
+--------- | ------- | -----------
+attrID_ | uint128 | NFT属性的唯一标识
+decimals_ | uint8 | 属性的精度
+
+#### createBatch
+
+> 创建多个属性
+
+```solidity
+function createBatch(uint128[] memory attrIDs_, uint8[] memory decimals_) override public onlyOwner {
+    super.createBatch(attrIDs_, decimals_);
+}
+```
+
+ 只有owner拥有属性的创建权限，已经存在的属性ID不可以被再次创建。
+ 
+Parameters:
+
+Name | Type | Description
+--------- | ------- | -----------
+attrIDs_ | uint128[] | NFT属性的唯一标识数组
+decimals_ | uint8[] | 属性的精度数组，每个元素的下标与attrIDs_的元素一一对应
+
+#### attach
+
+> 将单个属性添加到NFT属性列表中
+
+```solidity
+function attach(uint256 tokenID_, uint128 attrID_, uint128 value_) override public onlyTreasure {
+    _attach(tokenID_, attrID_, value_);
+}
+```
+
+ 将某一个属性和对应的值添加到NFT属性列表中，只有[treasure合约](#金库合约)才拥有调用此方法的权限。
+ 
+Parameters:
+
+Name | Type | Description
+--------- | ------- | -----------
+tokenID_ | uint256 | NFT 的唯一标识
+attrID_ | uint128 | NFT属性的唯一标识
+value_ | uint128 | NFT属性的值
+
+#### attachBatch
+
+> 将多个属性添加到NFT属性列表中
+
+```solidity
+function attachBatch(uint256 tokenID_, uint128[] memory attrIDs_, uint128[] memory values_) override public onlyTreasure {
+    _attachBatch(tokenID_, attrIDs_, values_);
+}
+```
+
+ 将某多个属性和对应的值添加到NFT属性列表中，只有[treasure合约](#金库合约)才拥有调用此方法的权限。
+ 
+Parameters:
+
+Name | Type | Description
+--------- | ------- | -----------
+tokenID_ | uint256 | NFT 的唯一标识
+attrIDs_ | uint128[] | NFT属性的唯一标识数组
+values_ | uint128[] | NFT属性值数组，每个元素下标与attrIDs_元素的对应
+
+#### remove
+
+> 将单个属性从NFT属性列表中移除
+
+```solidity
+function remove(uint256 tokenID_, uint256 attrIndex_) override public onlyTreasure {
+    _remove(tokenID_, attrIndex_);
+}
+```
+
+ 通过属性的下标，将对应的属性从NFT属性列表中移除，若下标超出属性数组范围，交易会执行失败，只有[treasure合约](#金库合约)才拥有调用此方法的权限。
+ 
+Parameters:
+
+Name | Type | Description
+--------- | ------- | -----------
+tokenID_ | uint256 | NFT 的唯一标识
+attrIndex_ | uint256 | 对应属性在NFT属性列表中的下标
+
+#### removeBatch
+
+> 将多个属性从NFT属性列表中移除
+
+```solidity
+function removeBatch(uint256 tokenID_, uint256[] memory attrIndexes_) override public onlyTreasure {
+    _removeBatch(tokenID_, attrIndexes_);
+}
+```
+
+ 通过多个属性的下标，将对应的属性从NFT属性列表中移除，若下标超出属性数组范围，交易会执行失败，只有[treasure合约](#金库合约)才拥有调用此方法的权限。
+ 
+Parameters:
+
+Name | Type | Description
+--------- | ------- | -----------
+tokenID_ | uint256 | NFT 的唯一标识
+attrIndexes_ | uint256[] | 对应属性在NFT属性列表中的下标数组
+
+#### update
+
+> 更新NFT单个属性的值
+
+```solidity
+function update(uint256 tokenID_, uint256 attrIndex_, uint128 value_) override public onlyTreasure {
+    _update(tokenID_, attrIndex_, value_);
+}
+```
+
+ 通过属性的下标，将对应的属性的值更新，若下标超出属性数组范围，交易会执行失败，只有[treasure合约](#金库合约)才拥有调用此方法的权限。
+ 
+Parameters:
+
+Name | Type | Description
+--------- | ------- | -----------
+tokenID_ | uint256 | NFT 的唯一标识
+attrIndex_ | uint256 | 对应属性在NFT属性列表中的下标
+value_ | uint128 | 需要设置的对应属性的新值
+
+#### updateBatch
+
+> 更新NFT多个属性的值
+
+```solidity
+function updateBatch(uint256 tokenID_, uint256[] memory attrIndexes_, uint128[] memory values_) override public onlyTreasure {
+    _updateBatch(tokenID_, attrIndexes_, values_);
+}
+```
+
+ 通过属性的下标，将多个属性的值更新，若下标超出属性数组范围，交易会执行失败，只有[treasure合约](#金库合约)才拥有调用此方法的权限。
+ 
+Parameters:
+
+Name | Type | Description
+--------- | ------- | -----------
+tokenID_ | uint256 | NFT 的唯一标识
+attrIndexes_ | uint256[] | 对应属性在NFT属性列表中的下标数组
+values_ | uint128[] | 需要设置的对应属性的新值集合，每个元素下标与attrIndexes_元素的对应
+
 ## 金库合约
 
 ### ERC20 金库合约
