@@ -66,7 +66,7 @@ address public immutable logic;
 
 #### Functions
 
-## Generate
+##### Generate
 
 ```solidity
 function generate(
@@ -124,7 +124,7 @@ _index | uint256 | token index number in the underlying set
  
  
 
-## GameErc20Proxy
+### GameErc20Proxy
 
 #### Storage variable
 
@@ -608,56 +608,92 @@ _nonce | uint256 | 随机数，用来标识此次充值订单
 
 ## 交易市场合约
 
+### Functions
 
+#### createPool
 
-# 控件列表
+> 创建出售单
 
-## 右边代码：
-
-> To authorize, use this code:
-
-```ruby
-require 'kittn'
-
-api = Kittn::APIClient.authorize!('meowmeowmeow')
+```solidity
+function createPool(
+    // address of token0
+    address token0,
+    // address of token1
+    address token1,
+    // token id of token0
+    uint256 tokenId,
+    // total amount of token1
+    uint256 amountTotal1,
+    // duration time
+    uint256 duration
+) external payable {
+    require(!getDisableErc721(), "ERC721 pool is disabled");
+    if (checkToken0) {
+        require(token0List[token0], "invalid token0");
+    }
+    uint256 amountTotal0 = 1;
+    _create(
+        token0, token1, tokenId, amountTotal0, amountTotal1,
+        duration
+    );
+}
 ```
 
-```python
-import kittn
+Parameters:
 
-api = kittn.authorize('meowmeowmeow')
-```
-
-```shell
-# With shell, you can just pass the correct header with each request
-curl "api_endpoint_here" \
-  -H "Authorization: meowmeowmeow"
-```
-
-```javascript
-const kittn = require('kittn');
-
-let api = kittn.authorize('meowmeowmeow');
-```
-
-> Make sure to replace `meowmeowmeow` with your API key.
-
-## 注意提醒控件
-
-<aside class="notice">
-You must replace <code>meowmeowmeow</code> with your personal API key.
-</aside>
-
-<aside class="success">
-Remember — a happy kitten is an authenticated kitten!
-</aside>
-
-<aside class="warning">Inside HTML code blocks like this one, you can't use Markdown, so use <code>&lt;code&gt;</code> blocks to denote code.</aside>
-
-## 表格
-
-Parameter | Default | Description
+Name | Type | Description
 --------- | ------- | -----------
-include_cats | false | If set to true, the result will also include cats.
-available | true | If set to false, the result will include kittens that have already been adopted.
+token0 | address | 出售的NFT合约地址
+token1 | address | 要接收的token地址
+tokenId | uint256 | 要卖出的NFT的TokenID
+amountTotal1 | uint256 | 价格，期望收到token1的数量
+duration | uint256 | 此卖单有效时间
 
+#### swap
+
+> 交换对应的NFT
+
+```solidity
+function swap(uint256 index) external payable
+    isPoolExist(index)
+    isPoolNotClosed(index)
+    isPoolNotSwap(index)
+{
+    Pool storage pool = pools[index];
+
+    // mark pool is swapped
+    swappedP[index] = true;
+
+    uint256 txFee = pool.amountTotal1 * getTxFeeRatio() / (1 ether);
+    uint256 _actualAmount1 = pool.amountTotal1 - txFee;
+    // transfer amount of token1 to creator
+    if (pool.token1 == address(0)) {
+        require(pool.amountTotal1 <= msg.value, "invalid ETH amount");
+
+        if (_actualAmount1 > 0) {
+            // transfer ETH to creator
+            pool.creator.transfer(_actualAmount1);
+        }
+        if (txFee > 0) {
+            // transaction fee to fee account
+            payable(getFeeAccount()).transfer(txFee);
+        }
+    } else {
+        IERC20Upgradeable(pool.token1).safeTransferFrom(msg.sender, address(this), pool.amountTotal1);
+        // transfer token1 to creator
+        IERC20Upgradeable(pool.token1).safeTransfer(pool.creator, _actualAmount1);
+        IERC20Upgradeable(pool.token1).safeTransfer(getFeeAccount(), txFee);
+    }
+
+    // transfer tokenId of token0 to sender
+    IERC721Upgradeable(pool.token0).safeTransferFrom(address(this), msg.sender, pool.tokenId);
+
+    emit Swapped(msg.sender, index, pool.amountTotal0);
+}
+```
+
+Parameters:
+
+Name | Type | Description
+--------- | ------- | -----------
+index | uint256 | NFT卖单在卖单集合里的下标
