@@ -4,13 +4,6 @@ title: API Reference
 language_tabs: # must be one of https://git.io/vQNgJ
   - solidity
 
-toc_footers:
-  - <a href='#'>Sign Up for a Developer Key</a>
-  - <a href='https://github.com/slatedocs/slate'>Documentation Powered by Slate</a>
-
-includes:
-  - errors
-
 search: true
 
 code_clipboard: true
@@ -22,11 +15,9 @@ meta:
 
 # Introduction
 
-这里将会介绍Connexion所有合约的技术细节，其中包括FT、NFT、Market、Treasure和Auction几部分内容。
+这里将会介绍Connexion所有合约的技术细节。其中包括FT、NFT、Treasure和Market几部分内容。
 
-# 合约实现细节
-
-## ERC20 Token Contract
+# ERC20 Token Contract
  
  Other than the basic functions of a Fungible Token, we also need to provide a one-click smart contract creation function. In order to realize this, we have developed three contracts, in the name of `GameERC20Factory.sol`, `GameERC20Proxy.sol` and `GameERC20Token.sol`. Their relationships are shown as below:
 
@@ -34,13 +25,11 @@ meta:
 
  For those who are unfamiliar with the delegatecall instruction, here is a simple explanation. Smart Contract A calls Smart Contract B via the delegatecall instruction, the transaction will execute according to the logics set by Contract B, however, the contexts of the execution and its status change are stored in Contract A. We call Contract A Proxy contract，Contract B Implementation contract. GameERC20Proxy is the Proxy contract, storing token status. Users are able to create any number of GameERC20Proxy cases via GameERCFactory, every case is a token. All tokens created by GameERC20Factory have the same implementation contract in GameERC20Token.
 
----
+## GameERC20Factory
 
-### GameERC20Factory
+### Storage variable
 
-#### Storage variable
-
-##### vaultCount
+#### vaultCount
 
 ```solidity
 uint256 public vaultCount;
@@ -48,7 +37,7 @@ uint256 public vaultCount;
 
  vaultCount表示已经创建的token总数
 
-##### vaults
+#### vaults
 
 ```solidity
 mapping(uint256 => address) public vaults;
@@ -56,7 +45,7 @@ mapping(uint256 => address) public vaults;
 
  vaults存储已经创建的token地址
 
-##### logic
+#### logic
 
 ```solidity
 address public immutable logic;
@@ -64,9 +53,9 @@ address public immutable logic;
 
  logic是所有代币的逻辑合约地址，使用不可变的变量存储逻辑合约地址保证每个工厂创建出来的代币逻辑合约都是一样的。
 
-#### Functions
+### Functions
 
-##### Generate
+#### Generate
 
 ```solidity
 function generate(
@@ -124,11 +113,11 @@ _index | uint256 | token index number in the underlying set
  
  
 
-### GameErc20Proxy
+## GameErc20Proxy
 
-#### Storage variable
+### Storage variable
 
-##### logic
+#### logic
 
 ```solidity
 address public immutable logic;
@@ -136,9 +125,9 @@ address public immutable logic;
 
  logic是所有代币的逻辑合约地址，使用不可变的变量存储逻辑合约地址保证token的合约逻辑不可以更改，可升级的合约就是通过改变logic合约实现的。
 
-#### Functions
+### Functions
 
-##### fallback
+#### fallback
 
 ```solidity
 fallback() external payable {
@@ -168,7 +157,7 @@ fallback() external payable {
 
  也可以参考Openzipplin的合约库具体实现[Openzeppelin Proxy](https://github.com/OpenZeppelin/openzeppelin-labs/blob/master/upgradeability_using_eternal_storage/contracts/Proxy.sol)
 
-### GameERC20Token
+## GameERC20Token
 
 ```solidity
 function mint(address account, uint256 amount) public onlyOwner {
@@ -188,7 +177,7 @@ account | address | 接收铸造代币的地址
 amount | uint256 | 铸造的数量
 
 
-## 多游戏通用的 NFT token contract
+# 多游戏通用的 NFT token contract
 
  Loot曾经被定义为NFT的新范式。在合约代码层面，Loot的创新在于它将NFT的属性写在去中心化系统上，很好的解决了传统NFT的Metadata可以被开发者随意变更的问题。在形象艺术方面，Loot刻意将图片省略，使得不同的作者可以各自发挥想象力，用不同的画面来描述同一个Loot。
 
@@ -198,7 +187,7 @@ amount | uint256 | 铸造的数量
 
  关于connecxion的NFT，我们创建了一个适用于GameFi的NFT新协议[Non-fungible Token for GameFi](https://github.com/bnb-chain/BEPs/pull/129)。
 
-### Storage variable
+## Storage variable
 
 > 存储属性的数据结构
 
@@ -227,9 +216,9 @@ mapping(uint256 => AttributeData[]) internal _attrData;
 
 `_attrData`也是一个键值对，key为tokenID，值为此NFT具有的属性数组
 
-### Functions
+## Functions
 
-#### tokenURI
+### tokenURI
 
 > 通过SVG展示NFT属性的方法
 
@@ -282,7 +271,7 @@ Name | Type | Description
 --------- | ------- | -----------
 output | string | SVG数据经过Base64编码后的数据
 
-#### create
+### create
 
 > 创建单个属性
 
@@ -301,7 +290,7 @@ Name | Type | Description
 attrID_ | uint128 | NFT属性的唯一标识
 decimals_ | uint8 | 属性的精度
 
-#### createBatch
+### createBatch
 
 > 创建多个属性
 
@@ -320,7 +309,7 @@ Name | Type | Description
 attrIDs_ | uint128[] | NFT属性的唯一标识数组
 decimals_ | uint8[] | 属性的精度数组，每个元素的下标与attrIDs_的元素一一对应
 
-#### attach
+### attach
 
 > 将单个属性添加到NFT属性列表中
 
@@ -340,7 +329,7 @@ tokenID_ | uint256 | NFT 的唯一标识
 attrID_ | uint128 | NFT属性的唯一标识
 value_ | uint128 | NFT属性的值
 
-#### attachBatch
+### attachBatch
 
 > 将多个属性添加到NFT属性列表中
 
@@ -360,7 +349,7 @@ tokenID_ | uint256 | NFT 的唯一标识
 attrIDs_ | uint128[] | NFT属性的唯一标识数组
 values_ | uint128[] | NFT属性值数组，每个元素下标与attrIDs_元素的对应
 
-#### remove
+### remove
 
 > 将单个属性从NFT属性列表中移除
 
@@ -379,7 +368,7 @@ Name | Type | Description
 tokenID_ | uint256 | NFT 的唯一标识
 attrIndex_ | uint256 | 对应属性在NFT属性列表中的下标
 
-#### removeBatch
+### removeBatch
 
 > 将多个属性从NFT属性列表中移除
 
@@ -398,7 +387,7 @@ Name | Type | Description
 tokenID_ | uint256 | NFT 的唯一标识
 attrIndexes_ | uint256[] | 对应属性在NFT属性列表中的下标数组
 
-#### update
+### update
 
 > 更新NFT单个属性的值
 
@@ -418,7 +407,7 @@ tokenID_ | uint256 | NFT 的唯一标识
 attrIndex_ | uint256 | 对应属性在NFT属性列表中的下标
 value_ | uint128 | 需要设置的对应属性的新值
 
-#### updateBatch
+### updateBatch
 
 > 更新NFT多个属性的值
 
@@ -438,7 +427,7 @@ tokenID_ | uint256 | NFT 的唯一标识
 attrIndexes_ | uint256[] | 对应属性在NFT属性列表中的下标数组
 values_ | uint128[] | 需要设置的对应属性的新值集合，每个元素下标与attrIndexes_元素的对应
 
-## 金库合约
+# 金库合约
 
 > 其中一个使用ecrecover指令恢复签名者的方法
 
@@ -479,11 +468,11 @@ FT的数量 | 用来控制提现出的金额
 NFT的tokenID | 用来确保将正确的NFT提出
 NFT属性更新后的数据 | 为了防止用户随意更改NFT属性
 
-### ERC20 金库合约
+## ERC20 金库合约
 
-#### Functions
+### Functions
 
-##### upChain
+#### upChain
 
 > 将FT资产从金库合约提出，对应游戏提现
 
@@ -509,7 +498,7 @@ _amount | uint256 | 代币数量
 _nonce | uint256 | 随机数，用来标识此签名是否已经被使用
 _signature | bytes | 签名机返回的签名数据
 
-##### topUp
+#### topUp
 
 > 将FT资产充值并锁定到金库合约中，对应游戏充值
 
@@ -531,9 +520,11 @@ Name | Type | Description
 _amount | uint256 | 代币数量
 _nonce | uint256 | 随机数，用来标识此次充值订单
 
-### ERC721 金库合约
+## ERC721 金库合约
 
-##### upChain
+### Functions
+
+#### upChain
 
 > 将NFT资产从金库合约提出，对应游戏提现
 
@@ -580,7 +571,7 @@ _attrValuesUpdate | uint128[] | 更新属性ID对应的值的数组
 _attrIndexesRM | uint256[] | 要被删除的属性ID数组
 _signature | bytes | 签名机返回的签名数据
 
-##### topUp
+#### topUp
 
 > 将NFT资产充值并锁定到金库合约中，对应游戏的充值
 
@@ -606,11 +597,11 @@ _token | address | 被提现的NFT地址
 _tokenID | uint256 | 被提现的NFT的TokenID
 _nonce | uint256 | 随机数，用来标识此次充值订单
 
-## 交易市场合约
+# 交易市场合约
 
-### Functions
+## Functions
 
-#### createPool
+### createPool
 
 > 创建出售单
 
@@ -649,7 +640,7 @@ tokenId | uint256 | 要卖出的NFT的TokenID
 amountTotal1 | uint256 | 价格，期望收到token1的数量
 duration | uint256 | 此卖单有效时间
 
-#### swap
+### swap
 
 > 交换对应的NFT
 
