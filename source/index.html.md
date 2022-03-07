@@ -469,13 +469,15 @@ function signatureWallet(
 
  从图中可以看出，用户需要签名才可以发出有效提现交易。签名在合约中的应用有两方面：ecrecover指令可以恢复签名数据的签名者地址，这样就能验证签名数据的真伪；另外，提现方法是可以被任何用户调用的，为了保证交易可以符合预期地被确认，签名机会对如下数据进行签名：
 
- - 接收者地址，为了防止错误的地址接收到从treasure合约提现出的资产
- - 金库合约地址，为了防止签名在另一个金库合约重用
- - 代币合约地址，确定此签名只能够从treasure合约中转移出一种资产
- - 不重复的随机数，确保此签名只能够使用一次
- - FT的数量，用来控制提现出的金额
- - NFT的tokenID，用来确保将正确的NFT提出
- - NFT属性更新后的数据
+Signed Message | Description
+--------- | ------- 
+接收者地址 | 为了防止错误的地址接收到从treasure合约提现出的资产
+金库合约地址 | 为了防止签名在另一个金库合约重用
+代币合约地址 | 确定此签名只能够从treasure合约中转移出一种资产
+不重复的随机数 | 确保此签名只能够使用一次
+FT的数量 | 用来控制提现出的金额
+NFT的tokenID | 用来确保将正确的NFT提出
+NFT属性更新后的数据 | 为了防止用户随意更改NFT属性
 
 ### ERC20 金库合约
 
@@ -483,23 +485,130 @@ function signatureWallet(
 
 ##### upChain
 
-> 
+> 将FT资产从金库合约提出，对应游戏提现
 
 ```solidity
+function upChain(
+    uint256 _amount,
+    uint256 _nonce,
+    bytes memory _signature
+) public nonceNotUsed(_nonce) whenNotPaused {
+    require(verify(msg.sender, address(this), token, _amount, _nonce, this.upChain.selector, _signature), "sign is not correct");
+    usedNonce[_nonce] = true;
 
+    IERC20(token).safeTransfer(msg.sender, _amount);
+    emit UpChain(msg.sender, _amount, _nonce);
+}
 ```
 
 Parameters:
 
 Name | Type | Description
 --------- | ------- | -----------
-tokenID_ | uint256 | NFT 的唯一标识
-attrIndexes_ | uint256[] | 对应属性在NFT属性列表中的下标数组
-values_ | uint128[] | 需要设置的对应属性的新值集合，每个元素下标与attrIndexes_元素的对应
+_amount | uint256 | 代币数量
+_nonce | uint256 | 随机数，用来标识此签名是否已经被使用
+_signature | bytes | 签名机返回的签名数据
+
+##### topUp
+
+> 将FT资产充值并锁定到金库合约中，对应游戏充值
+
+```solidity
+function topUp(
+    uint256 _amount,
+    uint256 _nonce
+) public nonceNotUsed(_nonce) whenNotPaused {
+    usedNonce[_nonce] = true;
+    IERC20(token).safeTransferFrom(msg.sender, address(this), _amount);
+    emit TopUp(msg.sender, _amount, _nonce);
+}
+```
+
+Parameters:
+
+Name | Type | Description
+--------- | ------- | -----------
+_amount | uint256 | 代币数量
+_nonce | uint256 | 随机数，用来标识此次充值订单
 
 ### ERC721 金库合约
 
+##### upChain
+
+> 将NFT资产从金库合约提出，对应游戏提现
+
+```solidity
+function upChain(
+    address _token,
+    uint256 _tokenID,
+    uint256 _nonce,
+    uint128[] memory _attrIDs,
+    uint128[] memory _attrValues,
+    uint256[] memory _attrIndexesUpdate,
+    uint128[] memory _attrValuesUpdate,
+    uint256[] memory _attrIndexesRM,
+    bytes memory _signature
+) public whenNotPaused nonceNotUsed(_nonce) {
+    require(msg.sender == lastOwner[_tokenID], "only person who topped up it");
+    require(verify(msg.sender, address(this), _token, _tokenID, _nonce, _attrIDs, _attrValues, _attrIndexesUpdate, _attrValuesUpdate, _attrIndexesRM, _signature), "sign is not correct");
+    usedNonce[_nonce] = true;
+    if (_attrIDs.length != 0)
+        IGameLoot(_token).attachBatch(_tokenID, _attrIDs, _attrValues);
+    if (_attrIndexesUpdate.length != 0)
+        IGameLoot(_token).updateBatch(_tokenID, _attrIndexesUpdate, _attrValuesUpdate);
+    if (_attrIndexesRM.length != 0)
+        IGameLoot(_token).removeBatch(_tokenID, _attrIndexesRM);
+    lastOwner[_tokenID] = address(0);
+    IERC721(_token).transferFrom(address(this), msg.sender, _tokenID);
+    emit UpChain(msg.sender, _token, _tokenID, _nonce);
+}
+```
+
+在游戏进行过程中，装备属性会随着玩家的行为而发生改变，提现的时候，需要将属性状态的更改同步到区块链系统中
+
+Parameters:
+
+Name | Type | Description
+--------- | ------- | -----------
+_token | address | 提现的NFT地址
+_tokenID | uint256 | 被提的装备ID
+_nonce | uint256 | 随机数，用来标识此签名是否已经被使用
+_attrIDs | uint128[] | 新增的属性ID数组
+_attrValues | uint128[] | 新增属性ID对应的值的数组
+_attrIndexesUpdate | uint256[] | 要更新的属性ID数组
+_attrValuesUpdate | uint128[] | 更新属性ID对应的值的数组
+_attrIndexesRM | uint256[] | 要被删除的属性ID数组
+_signature | bytes | 签名机返回的签名数据
+
+##### topUp
+
+> 将NFT资产充值并锁定到金库合约中，对应游戏的充值
+
+```solidity
+function topUp(
+    address _token,
+    uint256 _tokenID,
+    uint256 _nonce
+) public whenNotPaused nonceNotUsed(_nonce) {
+    usedNonce[_nonce] = true;
+
+    lastOwner[_tokenID] = msg.sender;
+    IERC721(_token).transferFrom(msg.sender, address(this), _tokenID);
+    emit TopUp(msg.sender, _token, _tokenID, _nonce);
+}
+```
+
+Parameters:
+
+Name | Type | Description
+--------- | ------- | -----------
+_token | address | 被提现的NFT地址
+_tokenID | uint256 | 被提现的NFT的TokenID
+_nonce | uint256 | 随机数，用来标识此次充值订单
+
 ## 交易市场合约
+
+
 
 # 控件列表
 
