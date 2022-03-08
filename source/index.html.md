@@ -452,7 +452,11 @@ function signatureWallet(
 }
 ```
 
- 金库合约是区块链系统与中心化游戏系统交互的关口，所有从区块链上充值到游戏内部的资产(包括FT和NFT)都是通过将资产锁定在treasure合约中来实现的；同样的，所有从游戏内部提现的资产也是通过解锁treasure合约中的资产来实现的。提现流程图如下：
+ 金库合约是区块链系统与中心化游戏系统交互的关口，先来看看资产流动关系图：
+
+![image](./images/assetsFlow.png) 
+ 
+ 所有从区块链上充值到游戏内部的资产(包括FT和NFT)都是通过将资产锁定在treasure合约中来实现的；同样的，所有从游戏内部提现的资产也是通过解锁treasure合约中的资产来实现的。提现流程图如下：
 
  ![image](./images/withdraw.png)
 
@@ -566,9 +570,9 @@ _tokenID | uint256 | 被提的装备ID
 _nonce | uint256 | 随机数，用来标识此签名是否已经被使用
 _attrIDs | uint128[] | 新增的属性ID数组
 _attrValues | uint128[] | 新增属性ID对应的值的数组
-_attrIndexesUpdate | uint256[] | 要更新的属性ID数组
-_attrValuesUpdate | uint128[] | 更新属性ID对应的值的数组
-_attrIndexesRM | uint256[] | 要被删除的属性ID数组
+_attrIndexesUpdate | uint256[] | 要更新的属性index数组
+_attrValuesUpdate | uint128[] | 更新属性index对应的值的数组
+_attrIndexesRM | uint256[] | 要被删除的属性index数组
 _signature | bytes | 签名机返回的签名数据
 
 #### topUp
