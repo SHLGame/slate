@@ -454,7 +454,7 @@ function signatureWallet(
 
  金库合约是区块链系统与中心化游戏系统交互的关口，先来看看资产流动关系图：
 
-![image](./images/assetsFlow.png) 
+![image](./images/assetsFlow.svg) 
  
  所有从区块链上充值到游戏内部的资产(包括FT和NFT)都是通过将资产锁定在treasure合约中来实现的；同样的，所有从游戏内部提现的资产也是通过解锁treasure合约中的资产来实现的。提现流程图如下：
 
