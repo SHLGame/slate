@@ -697,13 +697,32 @@ index | uint256 | NFT卖单在卖单集合里的下标
 
 ## 合约依赖来源
 
-所有合约依赖的库都来自[Openzepplin](https://docs.openzeppelin.com/contracts/4.x/)，Openzepplin经过多方的审核，和各个项目长时间的印证，证明是安全的。
+所有合约依赖的库都来自[Openzepplin](https://docs.openzeppelin.com/contracts/4.x/)，Openzepplin经过多方的审核，和各方长时间的印证，被证明是安全的。一下是信任Openzepplin的机构：
+
+![image](./images/oz.png)
+
+并且Openzepplin为多方机构做过安全审计报告，包括但不限于如下：
+
+![image](./images/oz1.png)
 
 ## 权限分离管理
 
 合约中，有一部分管理功能是及时性比较高的，比如紧急暂停权限。与此同时，类似合约的参数配置，及时性要求就没有那么的高。
 
-为了安全起见，将这两类权限分开在不同的地址中，分别称为 `controller` 和 `owner`，owner拥有更高的权限，可以设置并且更改controller，而controller有权限对及时性比较高的数据进行更改，比如紧急暂停合约的充提现功能。owner则负责在合约创建初期，进行参数的初始化。
+为了安全起见，将这两类权限分开在不同的地址中，分别称为 `controller` 和 `owner`。
+
+owner拥有更高的权限，拥有的权限如下：
+
+* 可以设置并且更改controller
+* 可以新增和删除签名机地址
+* 解锁合约的ETH
+
+
+controller拥有的权限如下：
+
+* 紧急暂停合约的充提现功能。
+
+owner则负责在合约创建初期，进行参数的初始化；controller配合风控系统，在发生重大安全事故时将合约充提现功能暂停，将损失控制到最小。
 
 ## 其他
 
