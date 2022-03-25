@@ -764,11 +764,11 @@ struct UserInfo {
 
 * 总权重积分为： <img src="./images/1.png" height="17">
 * 旧总权重积分为： <img src="./images/2.png" height="20">
-* 池子 $i$ 的权重为：<img src="./images/3.png" height="17">
-* 池子 $i$  的权重积分为：<img src="./images/4.png" height="17">
+* 池子 ***i*** 的权重为：<img src="./images/3.png" height="17">
+* 池子 ***i***  的权重积分为：<img src="./images/4.png" height="17">
 * 新加入池子的权重积分：<img src="./images/5.png" height="15">
 
-池子 $i$ 的权重计算方式：
+池子 ***i*** 的权重计算方式：
 <img src="./images/6.png" height="21" align="center">
 
 当有新池子加入，总积分变化：
@@ -828,11 +828,11 @@ function updatePool(uint256 _pid) public {
 * 距离上一次结算的区块数为：<img src="./images/10.png" height="18" align="center">
 
 * 总权重积分为： <img src="./images/11.png" height="18" align="center">
-* 池子 $i$  的权重积分为：<img src="./images/4.png" height="17">
+* 池子 ***i***  的权重积分为：<img src="./images/4.png" height="17">
 * 池子质押总量：<img src="./images/12.png" height="15">
 * Earnings per share 为：<img src="./images/13.png" height="18">
 
-则池子 $i$ 的***每份收益***计算方式：
+则池子 ***i*** 的***每份收益***计算方式：
 <img src="./images/14.png" height="40">
 
 由于***每份收益***是一直增加的，所以需要变量`rewardDebt`来记录用户之前领取了多少，用户的总收益减去`rewardDebt`就是用户当前可获得的收益。
