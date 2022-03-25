@@ -693,6 +693,146 @@ Name | Type | Description
 --------- | ------- | -----------
 index | uint256 | NFT卖单在卖单集合里的下标
 
+# 质押挖矿合约
+
+质押奖励的发放形式是按区块匀速发放的，每个新区块产生，便发放固定数量代币奖励。同时，合约中会有多个Pool，每个Pool在创建的时候具有不同的权重，这些发放的代币奖励是通过各个池子的权重等比发放的。
+
+## 合约存储了哪些重要的数据
+
+最重要的数据莫过于**Pool信息**和**用户的信息**
+
+### Pool信息
+
+来看合约代码：
+
+```solidity
+struct PoolInfo {
+	IERC20 lpToken; // Address of LP token contract.
+	uint256 allocPoint; // How many allocation points assigned to this pool. SUSHIs to distribute per block.
+	uint256 lastRewardBlock; // Last block number that SUSHIs distribution occurs.
+	uint256 accSushiPerShare; // Accumulated SUSHIs per share, times 1e12. See below.
+}
+```
+
+参数解释：
+
+|参数名|描述|
+|--|--|
+|lpToken|Pool接收的代币地址|
+|allocPoint|Pool的权重积分|
+|lastRewardBlock|第一个计算奖励的块高|
+|accSushiPerShare|Pool中每份质押的Sushi奖励|
+
+### 用户信息
+
+用户与Pool的存储关系是这样的：
+
+> PoolID -> 用户address -> 用户在该Pool中的信息
+
+对应合约中的代码：
+
+```solidity
+mapping(uint256 => mapping(address => UserInfo)) public userInfo;
+```
+
+由此可见，用户的数据是以Pool分割的。再来看看 `UserInfo` 代码：
+
+```solidity
+struct UserInfo {
+	uint256 amount; // How many LP tokens the user has provided.
+	uint256 rewardDebt; // Reward debt. See explanation below.
+}
+```
+
+参数解释：
+
+|参数名|描述|
+|--|--|
+|amount|用户当前质押数量|
+|rewardDebt|用户已经领取的奖励总数|
+
+这些参数如何使用，请看下面的奖励计算方式。
+
+## Pool权重计算方式
+
+假设：
+
+* 总权重积分为： $P_t$
+* 旧总权重积分为： $P^’_t$
+* 池子 $i$ 的权重为：$W_i$
+* 池子 $i$  的权重积分为：$P_i$
+* 新加入池子的权重积分：$p$
+
+池子 $i$ 的权重计算方式：
+
+$$W_i = P_i / P_t$$
+
+当有新池子加入，总积分变化：
+
+$$P_t = P_t^` + p$$
+
+可以看出，当有新Pool加入时，所有原有Pool的权重将会被稀释。
+
+## 奖励计算方式
+
+Pool奖励是根据份额和每份收益来计算的：
+
+$$奖励 = 份额 * 每份收益$$
+
+随着新区块数不断地产生，***每份收益***在不断地增加。因为此挖矿收益规则是每产生一个新区块，便发放固定数量的Sushi代币。
+
+那什么时候触发***每份收益***的更新呢？这也是合约设计的最巧妙的地方：在每次用户质押和提现的时候。
+
+我们看更新***每份收益***的代码，解释写在代码中：
+
+```solidity
+function updatePool(uint256 _pid) public {
+	// 1. 获取Pool信息
+	PoolInfo storage pool = poolInfo[_pid];
+	if (block.number <= pool.lastRewardBlock) {
+		return;
+	}
+	uint256 lpSupply = pool.lpToken.balanceOf(address(this));
+	if (lpSupply == 0) {
+		pool.lastRewardBlock = block.number;
+		return;
+	}
+	// 2. 获取距离上次更新每份收益的区块数 
+	uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
+	// 3. 根据区块数，奖励发放速度，Pool的权重计算此Pool的总Sushi奖励
+	uint256 sushiReward =
+		multiplier.mul(sushiPerBlock).mul(pool.allocPoint).div(
+			totalAllocPoint
+		);
+	sushi.mint(devaddr, sushiReward.div(10));
+	sushi.mint(address(this), sushiReward);
+	// 4. 根据总奖励计算并更新每份收益
+	pool.accSushiPerShare = pool.accSushiPerShare.add(
+		sushiReward.mul(1e12).div(lpSupply)
+	);
+	pool.lastRewardBlock = block.number;
+}
+```
+
+参数 `_pid` 为PoolID。
+
+这样***每份收益***的数学关系如下：
+
+假设：
+
+* 奖励发放速度为：$V$
+* 距离上一次结算的区块数为：$∆t$
+* 总权重积分为： $P$
+* 池子 $i$  的权重积分为：$P_i$
+* 池子质押总量：$M$
+* Earnings per share 为：$E$
+
+则池子 $i$ 的***每份收益***计算方式：
+
+$$ E = \frac{∆t・V・P_i}{P・M} $$ 
+
+由于***每份收益***是一直增加的，所以需要变量`rewardDebt`来记录用户之前领取了多少，用户的总收益减去`rewardDebt`就是用户当前可获得的收益。
+
 # 合约安全
 
 ## 合约依赖来源
