@@ -762,29 +762,25 @@ struct UserInfo {
 
 假设：
 
-<img src="./images/1111.png" height="125">
-
-* 总权重积分为： $P_t$
-* 旧总权重积分为： $P^’_t$
-* 池子 $i$ 的权重为：$W_i$
-* 池子 $i$  的权重积分为：$P_i$
-* 新加入池子的权重积分：$p$
+* 总权重积分为： <img src="./images/1.png" height="17">
+* 旧总权重积分为： <img src="./images/2.png" height="20">
+* 池子 $i$ 的权重为：<img src="./images/3.png" height="17">
+* 池子 $i$  的权重积分为：<img src="./images/4.png" height="17">
+* 新加入池子的权重积分：<img src="./images/5.png" height="15">
 
 池子 $i$ 的权重计算方式：
-
-$$W_i = P_i / P_t$$
+<img src="./images/6.png" height="21" align="center">
 
 当有新池子加入，总积分变化：
-
-$$P_t = P_t^` + p$$
+<img src="./images/7.png" height="22" align="center">
 
 可以看出，当有新Pool加入时，所有原有Pool的权重将会被稀释。
 
 ## 奖励计算方式
 
 Pool奖励是根据份额和每份收益来计算的：
+<img src="./images/8.png" height="24" align="center">
 
-$$奖励 = 份额 * 每份收益$$
 
 随着新区块数不断地产生，***每份收益***在不断地增加。因为此挖矿收益规则是每产生一个新区块，便发放固定数量的Sushi代币。
 
@@ -827,16 +823,17 @@ function updatePool(uint256 _pid) public {
 
 假设：
 
-* 奖励发放速度为：$V$
-* 距离上一次结算的区块数为：$∆t$
-* 总权重积分为： $P$
-* 池子 $i$  的权重积分为：$P_i$
-* 池子质押总量：$M$
-* Earnings per share 为：$E$
+* 奖励发放速度为：<img src="./images/9.png" height="19" align="center">
+
+* 距离上一次结算的区块数为：<img src="./images/10.png" height="18" align="center">
+
+* 总权重积分为： <img src="./images/11.png" height="18" align="center">
+* 池子 $i$  的权重积分为：<img src="./images/4.png" height="17">
+* 池子质押总量：<img src="./images/12.png" height="15">
+* Earnings per share 为：<img src="./images/13.png" height="18">
 
 则池子 $i$ 的***每份收益***计算方式：
-
-$$ E = \frac{∆t・V・P_i}{P・M} $$ 
+<img src="./images/14.png" height="40">
 
 由于***每份收益***是一直增加的，所以需要变量`rewardDebt`来记录用户之前领取了多少，用户的总收益减去`rewardDebt`就是用户当前可获得的收益。
 
