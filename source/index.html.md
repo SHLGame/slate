@@ -703,7 +703,9 @@ index | uint256 | NFT卖单在卖单集合里的下标
 
 ### Pool信息
 
-来看合约代码：
+来看右边合约代码：
+
+> 合约中存储Pool的数据结构
 
 ```solidity
 struct PoolInfo {
@@ -726,16 +728,19 @@ struct PoolInfo {
 ### 用户信息
 
 用户与Pool的存储关系是这样的：
-
-> PoolID -> 用户address -> 用户在该Pool中的信息
+**PoolID -> 用户address -> 用户在该Pool中的信息**
 
 对应合约中的代码：
+
+> Pool与用户数据映射关系
 
 ```solidity
 mapping(uint256 => mapping(address => UserInfo)) public userInfo;
 ```
 
-由此可见，用户的数据是以Pool分割的。再来看看 `UserInfo` 代码：
+由此可见，用户的数据是以Pool分割的。再来看看右边 `UserInfo` 代码：
+
+> 用户信息数据结构
 
 ```solidity
 struct UserInfo {
@@ -756,6 +761,8 @@ struct UserInfo {
 ## Pool权重计算方式
 
 假设：
+
+<img src="./images/1111.png" height="125">
 
 * 总权重积分为： $P_t$
 * 旧总权重积分为： $P^’_t$
