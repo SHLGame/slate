@@ -710,9 +710,9 @@ index | uint256 | NFT卖单在卖单集合里的下标
 ```solidity
 struct PoolInfo {
 	IERC20 lpToken; // Address of LP token contract.
-	uint256 allocPoint; // How many allocation points assigned to this pool. SUSHIs to distribute per block.
-	uint256 lastRewardBlock; // Last block number that SUSHIs distribution occurs.
-	uint256 accSushiPerShare; // Accumulated SUSHIs per share, times 1e12. See below.
+	uint256 allocPoint; // How many allocation points assigned to this pool. Tokens to distribute per block.
+	uint256 lastRewardBlock; // Last block number that Tokens distribution occurs.
+	uint256 accTokenPerShare; // Accumulated Tokens per share, times 1e12. See below.
 }
 ```
 
@@ -723,7 +723,7 @@ struct PoolInfo {
 |lpToken|Pool接收的代币地址|
 |allocPoint|Pool的权重积分|
 |lastRewardBlock|第一个计算奖励的块高|
-|accSushiPerShare|Pool中每份质押的Sushi奖励|
+|accTokenPerShare|Pool中每份质押的Token奖励|
 
 ### 用户信息
 
@@ -782,7 +782,7 @@ Pool奖励是根据份额和每份收益来计算的：
 <img src="./images/8.png" height="24" align="center">
 
 
-随着新区块数不断地产生，***每份收益***在不断地增加。因为此挖矿收益规则是每产生一个新区块，便发放固定数量的Sushi代币。
+随着新区块数不断地产生，***每份收益***在不断地增加。因为此挖矿收益规则是每产生一个新区块，便发放固定数量的奖励代币。
 
 那什么时候触发***每份收益***的更新呢？这也是合约设计的最巧妙的地方：在每次用户质押和提现的时候。
 
@@ -802,16 +802,16 @@ function updatePool(uint256 _pid) public {
 	}
 	// 2. 获取距离上次更新每份收益的区块数 
 	uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
-	// 3. 根据区块数，奖励发放速度，Pool的权重计算此Pool的总Sushi奖励
-	uint256 sushiReward =
-		multiplier.mul(sushiPerBlock).mul(pool.allocPoint).div(
+	// 3. 根据区块数，奖励发放速度，Pool的权重计算此Pool的总Token奖励
+	uint256 tokenReward =
+		multiplier.mul(tokenPerBlock).mul(pool.allocPoint).div(
 			totalAllocPoint
 		);
-	sushi.mint(devaddr, sushiReward.div(10));
-	sushi.mint(address(this), sushiReward);
+	token.mint(devaddr, tokenReward.div(10));
+	token.mint(address(this), tokenReward);
 	// 4. 根据总奖励计算并更新每份收益
-	pool.accSushiPerShare = pool.accSushiPerShare.add(
-		sushiReward.mul(1e12).div(lpSupply)
+	pool.accTokenPerShare = pool.accTokenPerShare.add(
+		tokenReward.mul(1e12).div(lpSupply)
 	);
 	pool.lastRewardBlock = block.number;
 }
@@ -836,6 +836,157 @@ function updatePool(uint256 _pid) public {
 <img src="./images/14.png" height="40">
 
 由于***每份收益***是一直增加的，所以需要变量`rewardDebt`来记录用户之前领取了多少，用户的总收益减去`rewardDebt`就是用户当前可获得的收益。
+
+# 时间锁合约
+
+## 时间锁的意义
+
+为了在一定程度上控制owner权限，当owner要做一些操作时，可以提前通知用户，并且将要调用的交易数据写入时间锁合约中的交易队列中，用户可以读取到owner即将要进行的操作，并在锁定的时间内做出自己的判断，判断owner的操作是否会给自己带来过大的风险。
+
+## 主要函数和流程
+
+时间锁合约使用时主要有两个步骤：<br>
+1. 设置交易的执行时间；
+2. 在有效期间执行交易；
+3. 设置到执行期间，可以取消设置的交易。
+
+### 设置交易
+
+当有owner操作将要执行，owner可以通过设置交易告知所有用户，即将在未来多久会执行什么函数的调用。在代码层面，设置交易就是将一笔交易的数据标记为pending状态，请看右边代码：
+
+> 设置交易函数代码
+
+```solidity
+function queueTransaction(
+	address target,
+	uint256 value,
+	string memory signature,
+	bytes memory data,
+	uint256 eta
+) public returns (bytes32) {
+	// 只有admin才有权限调用，这种admin是否权限过大？
+	require(msg.sender == admin, "Timelock::queueTransaction: Call must come from admin.");
+	// 合约中设置了一个最少延迟时间，解锁时间戳必须要满足这个条件
+	require(eta >= getBlockTimestamp().add(delay), "Timelock::queueTransaction: Estimated execution block must satisfy delay.");
+	// 计算交易标识
+	bytes32 txHash = keccak256(abi.encode(target, value, signature, data, eta));
+	// 标记为pending状态
+	queuedTransactions[txHash] = true;
+	emit QueueTransaction(txHash, target, value, signature, data, eta);
+	return txHash;
+}
+```
+
+参数解释：
+
+|参数名|描述|
+|--|--|
+|target|需要进行外部调用的合约地址|
+|value|交易的以太数量|
+|signature|方法签名|
+|data|编码好的 calldata|
+|eta|解锁此方法的时间戳|
+
+返回值解释：
+
+|返回值|描述|
+|--|--|
+|bytes32|交易在时间锁合约中的标识|
+
+<aside class="notice">
+注意⚠️：返回值并不是交易Hash，因为eta并不是交易中的数据。
+</aside>
+
+### 取消交易
+
+取消交易就比较好理解，将标记为pending状态的交易的状态更改，请看右边代码：
+
+> 取消交易代码
+
+```solidity
+function cancelTransaction(
+	address target,
+	uint256 value,
+	string memory signature,
+	bytes memory data,
+	uint256 eta
+) public {
+	require(msg.sender == admin, "Timelock::cancelTransaction: Call must come from admin.");
+	// 使用同样的方式计算交易标识
+	bytes32 txHash = keccak256(abi.encode(target, value, signature, data, eta));
+	// 更改状态
+	queuedTransactions[txHash] = false;
+	emit CancelTransaction(txHash, target, value, signature, data, eta);
+}
+```
+
+参数解释：
+
+|参数名|描述|
+|--|--|
+|target|需要进行外部调用的合约地址|
+|value|交易的以太数量|
+|signature|方法签名|
+|data|编码好的 calldata|
+|eta|解锁此方法的时间戳|
+
+### 执行交易
+
+通过时间锁合约执行目标合约的方法，需要用到外部调用，请看右边代码：
+
+> 执行交易代码
+
+```solidity
+function executeTransaction(
+	address target,
+	uint256 value,
+	string memory signature,
+	bytes memory data,
+	uint256 eta
+) public payable returns (bytes memory) {
+	require(msg.sender == admin, "Timelock::executeTransaction: Call must come from admin.");
+	// 使用同样的方式计算交易标识
+	bytes32 txHash = keccak256(abi.encode(target, value, signature, data, eta));
+	// 检查是否在队列中
+	require(queuedTransactions[txHash], "Timelock::executeTransaction: Transaction hasn't been queued.");
+	// 是否已经解锁
+	require(getBlockTimestamp() >= eta, "Timelock::executeTransaction: Transaction hasn't surpassed time lock.");
+	// 是否已经超时
+	require(getBlockTimestamp() <= eta.add(GRACE_PERIOD), "Timelock::executeTransaction: Transaction is stale.");
+	queuedTransactions[txHash] = false;
+	bytes memory callData;
+	// 提供两个选项，可以在外部直接计算好callData，也可以直接在合约里计算
+	if (bytes(signature).length == 0) {
+		callData = data;
+	} else {
+	    // 生成callData
+		callData = abi.encodePacked(bytes4(keccak256(bytes(signature))), data);
+	}
+	// 外部调用
+	(bool success, bytes memory returnData) = target.call{value: value}(callData);
+	// 检查执行状态
+	require(success, "Timelock::executeTransaction: Transaction execution reverted.");
+	emit ExecuteTransaction(txHash, target, value, signature, data, eta);
+	return returnData;
+}
+```
+参数解释：
+
+|参数名|描述|
+|--|--|
+|target|需要进行外部调用的合约地址|
+|value|交易的以太数量|
+|signature|方法签名|
+|data|编码好的 calldata|
+|eta|解锁此方法的时间戳|
+
+返回值解释：
+
+|返回值|描述|
+|--|--|
+|bytes|执行外部调用的结果回执|
+
+任何将调用权限交给此合约的合约方法，都可以使用此合约的时间锁功能。以上三个步骤都只能够由项目的owner调用。
 
 # 合约安全
 
@@ -867,6 +1018,9 @@ controller拥有的权限如下：
 * 紧急暂停合约的充提现功能。
 
 owner则负责在合约创建初期，进行参数的初始化；controller配合风控系统，在发生重大安全事故时将合约充提现功能暂停，将损失控制到最小。
+
+
+
 
 ## 其他
 
