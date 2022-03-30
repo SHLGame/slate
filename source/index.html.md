@@ -189,7 +189,7 @@ amount | uint256 | 铸造的数量
 
  ![image](./images/registry.svg)
 
- Registry合约代表某个具体游戏的数据，当玩家想查看自己的NFT在某一特定游戏中的形象，就可以通过`TokenURIGame`方法查看。
+ Registry合约代表某个具体游戏的数据，当玩家想查看自己的NFT在某一特定游戏中的形象，就可以通过`TokenURIGame`方法查看。TokenURI返回的是不包含任何游戏元素的元数据，为了满足EIP721标准、保证能够在Opensea上正常显示。
 
  关于connecxion的NFT，我们创建了一个适用于GameFi的NFT新协议[Non-fungible Token for GameFi](https://github.com/bnb-chain/BEPs/pull/129)。
 
