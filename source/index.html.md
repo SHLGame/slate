@@ -19,11 +19,11 @@ meta:
 
 # ERC20 Token Contract
  
- Other than the basic functions of a Fungible Token, we also need to provide a one-click smart contract creation function. In order to realize this, we have developed three contracts, in the name of `GameERC20Factory.sol`, `GameERC20Proxy.sol` and `GameERC20Token.sol`. Their relationships are shown as below:
+ 除了FT代币的基础功能以外，还需要提供一键创建代币合约的功能。为了实现这个功能，我们编写了3个合约，分别是：`GameERC20Factory.sol`、 `GameERC20Proxy.sol` 和 `GameERC20Token.sol`，下面是他们的关系图：
 
  ![image ERC20关系图](./images/ERC20.png)
 
- For those who are unfamiliar with the delegatecall instruction, here is a simple explanation. Smart Contract A calls Smart Contract B via the delegatecall instruction, the transaction will execute according to the logics set by Contract B, however, the contexts of the execution and its status change are stored in Contract A. We call Contract A Proxy contract，Contract B Implementation contract. GameERC20Proxy is the Proxy contract, storing token status. Users are able to create any number of GameERC20Proxy cases via GameERCFactory, every case is a token. All tokens created by GameERC20Factory have the same implementation contract in GameERC20Token.
+ 对 delegatecall 熟悉的人应该知道：合约A通过delegatecall调用合约B，交易会按照合约B的逻辑执行，但是执行的上下文和更改的状态都在合约A中，我们称合约A为代理合约，合约B为逻辑合约。`GameERC20Proxy`就是代理合约，存储token的状态，用户可以通过`GameERC20Factory`创建任意个`GameERC20Proxy`的实例，每个实例就是一个token，所有通过`GameERC20Factory`创建出来的token的逻辑合约都是`GameERC20Token`。
 
 ## GameERC20Factory
 
@@ -105,13 +105,7 @@ _index | uint256 | token index number in the underlying set
  
  
  
- 
- 
- 
- 
- 
- 
- 
+
 
 ## GameErc20Proxy
 
@@ -851,7 +845,7 @@ function updatePool(uint256 _pid) public {
 
 ## 主要函数和流程
 
-时间锁合约使用时主要有两个步骤：
+时间锁合约使用时主要有三个功能：
 
 1. 设置交易的执行时间；
 2. 在有效期间执行交易；
@@ -892,7 +886,7 @@ function queueTransaction(
 |value|交易的以太数量|
 |signature|方法签名|
 |data|编码好的 calldata|
-|eta|解锁此方法的时间戳|
+|eta|解锁此交易的时间戳|
 
 返回值解释：
 
@@ -935,7 +929,7 @@ function cancelTransaction(
 |value|交易的以太数量|
 |signature|方法签名|
 |data|编码好的 calldata|
-|eta|解锁此方法的时间戳|
+|eta|解锁此交易的时间戳|
 
 ### 执行交易
 
@@ -985,7 +979,7 @@ function executeTransaction(
 |value|交易的以太数量|
 |signature|方法签名|
 |data|编码好的 calldata|
-|eta|解锁此方法的时间戳|
+|eta|解锁此交易的时间戳|
 
 返回值解释：
 
