@@ -469,19 +469,18 @@ Signed Message | Description
 recipient address | to prevent a false address receiving the withdrawn assets from the treasury
 treasury contract address | to prevent the signature from being used in another treasury
 token contract address | guaratee that the signature can only withdraw one asset from the treasury
-a non-repeated randomized number | 确保此签名只能够使用一次
+a non-repeated randomized number | guarantee that the signature can only be used once
+FT amount | to control the withdrawn amount
+NFT tokenID | to guarantee withdrawing the correct NFT
+Updated attributes data for the NFT | to prevent users from changing the NFT attributes at will
 
-FT的数量 | 用来控制提现出的金额
-NFT的tokenID | 用来确保将正确的NFT提出
-NFT属性更新后的数据 | 为了防止用户随意更改NFT属性
-
-## ERC20 金库合约
+## ERC20 Treasury Contract
 
 ### Functions
 
 #### upChain
 
-> 将FT资产从金库合约提出，对应游戏提现
+> Withdraw FT assets from the treasury contract, corresponding to game withdrawal
 
 ```solidity
 function upChain(
@@ -501,13 +500,13 @@ Parameters:
 
 Name | Type | Description
 --------- | ------- | -----------
-_amount | uint256 | 代币数量
-_nonce | uint256 | 随机数，用来标识此签名是否已经被使用
-_signature | bytes | 签名机返回的签名数据
+_amount | uint256 | Token amount
+_nonce | uint256 | a randomized number to verify if the signature has been used already
+_signature | bytes | signature data returned by the signature machine
 
 #### topUp
 
-> 将FT资产充值并锁定到金库合约中，对应游戏充值
+> Recharge and lock FT assets into the vault contract, corresponding to game recharge
 
 ```solidity
 function topUp(
@@ -524,16 +523,16 @@ Parameters:
 
 Name | Type | Description
 --------- | ------- | -----------
-_amount | uint256 | 代币数量
-_nonce | uint256 | 随机数，用来标识此次充值订单
+_amount | uint256 | Token amount
+_nonce | uint256 | a randomized number to mark this deposit order
 
-## ERC721 金库合约
+## ERC721 Treasury Contract
 
 ### Functions
 
 #### upChain
 
-> 将NFT资产从金库合约提出，对应游戏提现
+> Withdraw NFT assets from the treasury contract, corresponding to game withdrawal
 
 ```solidity
 function upChain(
@@ -562,25 +561,25 @@ function upChain(
 }
 ```
 
-在游戏进行过程中，装备属性会随着玩家的行为而发生改变，提现的时候，需要将属性状态的更改同步到区块链系统中
+During the gaming process, the atrtibutes of certain gears will change based on player’s action, thus when withdrawing, we need to update the status of the attributes onto the blockchain.
 
 Parameters:
 
 Name | Type | Description
 --------- | ------- | -----------
-_token | address | 提现的NFT地址
-_tokenID | uint256 | 被提的装备ID
-_nonce | uint256 | 随机数，用来标识此签名是否已经被使用
-_attrIDs | uint128[] | 新增的属性ID数组
-_attrValues | uint128[] | 新增属性ID对应的值的数组
-_attrIndexesUpdate | uint256[] | 要更新的属性index数组
-_attrValuesUpdate | uint128[] | 更新属性index对应的值的数组
-_attrIndexesRM | uint256[] | 要被删除的属性index数组
-_signature | bytes | 签名机返回的签名数据
+_token | address | withdrawn NFT token address
+_tokenID | uint256 | withdrawn NFT tokenID
+_nonce | uint256 | a randomized number to mark the signature and verify if it has been used
+_attrIDs | uint128[] | new attribute IDs array
+_attrValues | uint128[] | new attributes values corresponding to the IDs array
+_attrIndexesUpdate | uint256[] | attribute index arrays that require updates
+_attrValuesUpdate | uint128[] | updated value for the attribute index arrays
+_attrIndexesRM | uint256[] | attribute index arrays to be removed
+_signature | bytes | signature data returned by the signature machine
 
 #### topUp
 
-> 将NFT资产充值并锁定到金库合约中，对应游戏的充值
+> Recharge and lock NFT assets into the vault contract, corresponding to the recharge of the game
 
 ```solidity
 function topUp(
@@ -600,17 +599,17 @@ Parameters:
 
 Name | Type | Description
 --------- | ------- | -----------
-_token | address | 被提现的NFT地址
-_tokenID | uint256 | 被提现的NFT的TokenID
-_nonce | uint256 | 随机数，用来标识此次充值订单
+_token | address | Depositing NFT’s token address
+_tokenID | uint256 | Depositing NFT’s tokenID
+_nonce | uint256 | a randomized number to mark this deposit order
 
-# 交易市场合约
+# Marketplace Contract
 
 ## Functions
 
 ### createPool
 
-> 创建出售单
+> Create a sell order
 
 ```solidity
 function createPool(
@@ -641,15 +640,15 @@ Parameters:
 
 Name | Type | Description
 --------- | ------- | -----------
-token0 | address | 出售的NFT合约地址
-token1 | address | 要接收的token地址
-tokenId | uint256 | 要卖出的NFT的TokenID
-amountTotal1 | uint256 | 价格，期望收到token1的数量
-duration | uint256 | 此卖单有效时间
+token0 | address | selling NFT’s token contract address
+token1 | address | receiving crypto currency’s token address
+tokenId | uint256 | selling NFT’s tokenID
+amountTotal1 | uint256 | price, expected amount of token1
+duration | uint256 | duration of the sell order
 
 ### swap
 
-> 交换对应的NFT
+> Exchange the corresponding NFT
 
 ```solidity
 function swap(uint256 index) external payable
@@ -694,21 +693,21 @@ Parameters:
 
 Name | Type | Description
 --------- | ------- | -----------
-index | uint256 | NFT卖单在卖单集合里的下标
+index | uint256 | NFT sell order’s index in the sell order pool
 
-# 质押挖矿合约
+# Stake and Farm Contract
 
-质押奖励的发放形式是按区块匀速发放的，每个新区块产生，便发放固定数量代币奖励。同时，合约中会有多个Pool，每个Pool在创建的时候具有不同的权重，这些发放的代币奖励是通过各个池子的权重等比发放的。
+Staking rewards are distributed uniformly with the generated blocks. Every time a new block is generated, fixed amount of token rewards will be distributed. Simultaneously, there will be multiple pools in a single contract, every pool is generated to have different weights. The rewards are weighted by the pools and distributed accordingly.
 
-## 合约存储了哪些重要的数据
+## What are the important data in the smart contract?
 
-最重要的数据莫过于**Pool信息**和**用户的信息**
+The most important data are the pools and their users’ information
 
-### Pool信息
+### Pool Info
 
-来看右边合约代码：
+Let’s look at the smart contract code on the right.
 
-> 合约中存储Pool的数据结构
+> The data structure that stores the Pool in the contract.
 
 ```solidity
 struct PoolInfo {
@@ -719,81 +718,81 @@ struct PoolInfo {
 }
 ```
 
-参数解释：
+Parameters:
 
-|参数名|描述|
+|Name|Description|
 |--|--|
-|lpToken|Pool接收的代币地址|
-|allocPoint|Pool的权重积分|
-|lastRewardBlock|第一个计算奖励的块高|
-|accTokenPerShare|Pool中每份质押的Token奖励|
+|lpToken|Token contract address of the token|
+|allocPoint|allocation points assigned to the pool|
+|lastRewardBlock|last block number that Tokens distribution occurs|
+|accTokenPerShare|accumulated Tokens reward per share of staked token|
 
-### 用户信息
+### User Info
 
-用户与Pool的存储关系是这样的：
-**PoolID -> 用户address -> 用户在该Pool中的信息**
+The relationships between user and the staking pool are as such:
+**PoolID -> user address -> User’s Info in the pool**
 
-对应合约中的代码：
+corresponding to the following smart contract coding:
 
-> Pool与用户数据映射关系
+> Pool and user data mapping relationship
 
 ```solidity
 mapping(uint256 => mapping(address => UserInfo)) public userInfo;
 ```
 
-由此可见，用户的数据是以Pool分割的。再来看看右边 `UserInfo` 代码：
+Therefore we can see that user info is marked by pool. Let’s take a look at the `UserInfo` coding on the right:
 
-> 用户信息数据结构
+> User Information Data Structure
 
 ```solidity
 struct UserInfo {
-	uint256 amount; // How many LP tokens the user has provided.
+	uint256 amount; // How many tokens the user has provided.
 	uint256 rewardDebt; // Reward debt. See explanation below.
 }
 ```
 
-参数解释：
+Parameters:
 
-|参数名|描述|
+|Name|Description|
 |--|--|
-|amount|用户当前质押数量|
-|rewardDebt|用户已经领取的奖励总数|
+|amount|amount of tokens the user staked|
+|rewardDebt|reward debt, or rewards that have been drawn|
 
-这些参数如何使用，请看下面的奖励计算方式。
+We will take a look at the reward calculation method to demonstrate how these parameters work.
 
-## Pool权重计算方式
+## Pool weight calculation
 
-假设：
+Suppose:
 
-* 总权重积分为： <img src="./images/1.png" height="17">
-* 旧总权重积分为： <img src="./images/2.png" height="20">
-* 池子 ***i*** 的权重为：<img src="./images/3.png" height="17">
-* 池子 ***i***  的权重积分为：<img src="./images/4.png" height="17">
-* 新加入池子的权重积分：<img src="./images/5.png" height="15">
+* Total Weight Points: <img src="./images/1.png" height="17">
+* Past Total Weight Points: <img src="./images/2.png" height="20">
+* Weight of Pool ***i***: <img src="./images/3.png" height="17">
+* Weight Points of Pool ***i***: <img src="./images/4.png" height="17">
+* New Weight Points added to the pool: <img src="./images/5.png" height="15">
 
-池子 ***i*** 的权重计算方式：
+Calculation of Weight of Pool ***i*** :
 <img src="./images/6.png" height="21" align="center">
 
-当有新池子加入，总积分变化：
+When a new Pool is added, change to total Weight Points: 
 <img src="./images/7.png" height="22" align="center">
 
-可以看出，当有新Pool加入时，所有原有Pool的权重将会被稀释。
+Thus we can tell that whenever a new pool is added, the weights of all existing pools are diluted.
 
-## 奖励计算方式
+## Reward calculation
 
-Pool奖励是根据份额和每份收益来计算的：
-<img src="./images/8.png" height="24" align="center">
+Pool rewards are calculated by share and reward per share: 
 
+`Reward = Shares * Reward per share`
 
-随着新区块数不断地产生，***每份收益***在不断地增加。因为此挖矿收益规则是每产生一个新区块，便发放固定数量的奖励代币。
+As new blocks are constantly generated, ***reward per share***will increase. Because the stake and farm rewarding mechanism lies in distributing fixed amount of tokens every new block.
 
-那什么时候触发***每份收益***的更新呢？这也是合约设计的最巧妙的地方：在每次用户质押和提现的时候。
+When do we update the***reward per share***? This is where the cleverness of smart contract design lies: we update the reward per share only when user stake or withdraw.
 
-我们看更新***每份收益***的代码，解释写在代码中：
+Let’s take a look at the code on updating ***reward per share***, the explanation is written in the code:
 
 ```solidity
 function updatePool(uint256 _pid) public {
-	// 1. 获取Pool信息
+	// 1. Get Pool information
 	PoolInfo storage pool = poolInfo[_pid];
 	if (block.number <= pool.lastRewardBlock) {
 		return;
@@ -803,16 +802,16 @@ function updatePool(uint256 _pid) public {
 		pool.lastRewardBlock = block.number;
 		return;
 	}
-	// 2. 获取距离上次更新每份收益的区块数 
+	// 2. Get the number of blocks since the last update of reward per share 
 	uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
-	// 3. 根据区块数，奖励发放速度，Pool的权重计算此Pool的总Token奖励
+	// 3. Calculate the total Token reward of this Pool according to the number of blocks, the speed of reward issuance, and the weight of the Pool
 	uint256 tokenReward =
 		multiplier.mul(tokenPerBlock).mul(pool.allocPoint).div(
 			totalAllocPoint
 		);
 	token.mint(devaddr, tokenReward.div(10));
 	token.mint(address(this), tokenReward);
-	// 4. 根据总奖励计算并更新每份收益
+	// 4. Calculate and update reward per share based on total rewards
 	pool.accTokenPerShare = pool.accTokenPerShare.add(
 		tokenReward.mul(1e12).div(lpSupply)
 	);
@@ -820,45 +819,45 @@ function updatePool(uint256 _pid) public {
 }
 ```
 
-参数 `_pid` 为PoolID。
+Parameter _pid is the PoolID.
 
-这样***每份收益***的数学关系如下：
+The calculation of ***reward per share***is shown below:
 
-假设：
+Suppose:
 
-* 奖励发放速度为：<img src="./images/9.png" height="19" align="center">
+* Reward Distribution Velocity: <img src="./images/9.png" height="19" align="center">
 
-* 距离上一次结算的区块数为：<img src="./images/10.png" height="18" align="center">
+* block gap since last settlement: <img src="./images/10.png" height="18" align="center">
 
-* 总权重积分为： <img src="./images/11.png" height="18" align="center">
-* 池子 ***i***  的权重积分为：<img src="./images/4.png" height="17">
-* 池子质押总量：<img src="./images/12.png" height="15">
-* Earnings per share 为：<img src="./images/13.png" height="18">
+* Total Weight Points: <img src="./images/11.png" height="18" align="center">
+* Weight Points of Pool ***i***: <img src="./images/4.png" height="17">
+* Total Staked Amount: <img src="./images/12.png" height="15">
+* Earnings per share: <img src="./images/13.png" height="18">
 
-则池子 ***i*** 的***每份收益***计算方式：
+Calculation of earning per share for pool ***i***:
 <img src="./images/14.png" height="40">
 
-由于***每份收益***是一直增加的，所以需要变量`rewardDebt`来记录用户之前领取了多少，用户的总收益减去`rewardDebt`就是用户当前可获得的收益。
+Because earning per share is constantly increasing, we need to use variable `rewardDebt` to record the amount of rewards that the user has drawn. The total reward minus `rewardDebt` will be the current claimable rewards.
 
-# 时间锁合约
+# Timelock Smart Contract
 
-## 时间锁的意义
+## The Purpose of a timelock contract
 
-为了在一定程度上控制owner权限，当owner要做一些操作时，可以提前通知用户，并且将要调用的交易数据写入时间锁合约中的交易队列中，用户可以读取到owner即将要进行的操作，并在锁定的时间内做出自己的判断，判断owner的操作是否会给自己带来过大的风险。
+The purpose of a timelock contract is to control the owner permission to some degrees. When the owners are to conduct an operation, he can notify the users in advance, and write the to-be-called transaction data in the transaction queue of a timelock contract. The users will be able to read what the owner is about to do, judge whether the owner’s action will bring significant risks or not, and make their decisions accordingly within the timespan of the timelock.
 
-## 主要函数和流程
+## Primary functions and steps
 
-时间锁合约使用时主要有三个功能：
+There are usually three main function in a timelock contract:
 
-1. 设置交易的执行时间；
-2. 在有效期间执行交易；
-3. 设置到执行期间，可以取消设置的交易。
+1. Setting the transaction execution time;
+2. Execute the transaction in the valid timeframe;
+3. Cancel the transaction anytime between set up till execution
 
-### 设置交易
+### Setting up transaction
 
-当有owner操作将要执行，owner可以通过设置交易告知所有用户，即将在未来多久会执行什么函数的调用。在代码层面，设置交易就是将一笔交易的数据标记为pending状态，请看右边代码：
+When the owner is about to conduct a transaction, he can notify all users by setting up the transaction, informing on when, how, and what about the transaction. On the coding level, setting up a transaction is equivalent to marking a transaction as pending status. Please refer to the right:
 
-> 设置交易函数代码
+> Set transaction function code
 
 ```solidity
 function queueTransaction(
@@ -868,44 +867,41 @@ function queueTransaction(
 	bytes memory data,
 	uint256 eta
 ) public returns (bytes32) {
-	// 只有admin才有权限调用，这种admin是否权限过大？
 	require(msg.sender == admin, "Timelock::queueTransaction: Call must come from admin.");
-	// 合约中设置了一个最少延迟时间，解锁时间戳必须要满足这个条件
 	require(eta >= getBlockTimestamp().add(delay), "Timelock::queueTransaction: Estimated execution block must satisfy delay.");
-	// 计算交易标识
 	bytes32 txHash = keccak256(abi.encode(target, value, signature, data, eta));
-	// 标记为pending状态
+	// marked as pending
 	queuedTransactions[txHash] = true;
 	emit QueueTransaction(txHash, target, value, signature, data, eta);
 	return txHash;
 }
 ```
 
-参数解释：
+Parameters:
 
-|参数名|描述|
+|Name|Description|
 |--|--|
-|target|需要进行外部调用的合约地址|
-|value|交易的以太数量|
-|signature|方法签名|
-|data|编码好的 calldata|
-|eta|解锁此交易的时间戳|
+|target|the target to-be-called contract address|
+|value|amount of Eth for this transaction|
+|signature|function signature|
+|data|calldata that was encoded|
+|eta|timestamp to unlock the transaction|
 
-返回值解释：
+Callback:
 
-|返回值|描述|
+|Name|Description|
 |--|--|
-|bytes32|交易在时间锁合约中的标识|
+|bytes32|marking of this transaction in the timelock contract|
 
 <aside class="notice">
-注意⚠️：返回值并不是交易Hash，因为eta并不是交易中的数据。
+Note⚠️：The callback value is not a transaction hash, because eta is not transaction data.
 </aside>
 
-### 取消交易
+### Cancel transaction
 
-取消交易就比较好理解，将标记为pending状态的交易的状态更改，请看右边代码：
+Cancel transaction is changing the status of the pending transaction, please refer to the right:
 
-> 取消交易代码
+> Cancel transaction code
 
 ```solidity
 function cancelTransaction(
@@ -916,9 +912,7 @@ function cancelTransaction(
 	uint256 eta
 ) public {
 	require(msg.sender == admin, "Timelock::cancelTransaction: Call must come from admin.");
-	// 使用同样的方式计算交易标识
 	bytes32 txHash = keccak256(abi.encode(target, value, signature, data, eta));
-	// 更改状态
 	queuedTransactions[txHash] = false;
 	emit CancelTransaction(txHash, target, value, signature, data, eta);
 }
@@ -926,19 +920,19 @@ function cancelTransaction(
 
 参数解释：
 
-|参数名|描述|
+|Name|Description|
 |--|--|
-|target|需要进行外部调用的合约地址|
-|value|交易的以太数量|
-|signature|方法签名|
-|data|编码好的 calldata|
-|eta|解锁此交易的时间戳|
+|target|the target to-be-called contract address|
+|value|amount of Eth for this transaction|
+|signature|function signature|
+|data|calldata that was encoded|
+|eta|timestamp to unlock the transaction|
 
-### 执行交易
+### Execute Transaction
 
-通过时间锁合约执行目标合约的方法，需要用到外部调用，请看右边代码：
+Use the timelock contract to execute target contract. Will need to call target contract, please refer to the right:
 
-> 执行交易代码
+> execute transaction code
 
 ```solidity
 function executeTransaction(
@@ -949,83 +943,72 @@ function executeTransaction(
 	uint256 eta
 ) public payable returns (bytes memory) {
 	require(msg.sender == admin, "Timelock::executeTransaction: Call must come from admin.");
-	// 使用同样的方式计算交易标识
 	bytes32 txHash = keccak256(abi.encode(target, value, signature, data, eta));
-	// 检查是否在队列中
 	require(queuedTransactions[txHash], "Timelock::executeTransaction: Transaction hasn't been queued.");
-	// 是否已经解锁
 	require(getBlockTimestamp() >= eta, "Timelock::executeTransaction: Transaction hasn't surpassed time lock.");
-	// 是否已经超时
 	require(getBlockTimestamp() <= eta.add(GRACE_PERIOD), "Timelock::executeTransaction: Transaction is stale.");
 	queuedTransactions[txHash] = false;
 	bytes memory callData;
-	// 提供两个选项，可以在外部直接计算好callData，也可以直接在合约里计算
 	if (bytes(signature).length == 0) {
 		callData = data;
 	} else {
-	    // 生成callData
 		callData = abi.encodePacked(bytes4(keccak256(bytes(signature))), data);
 	}
-	// 外部调用
 	(bool success, bytes memory returnData) = target.call{value: value}(callData);
-	// 检查执行状态
 	require(success, "Timelock::executeTransaction: Transaction execution reverted.");
 	emit ExecuteTransaction(txHash, target, value, signature, data, eta);
 	return returnData;
 }
 ```
-参数解释：
 
-|参数名|描述|
+Parameters:
+
+|Name|Description|
 |--|--|
-|target|需要进行外部调用的合约地址|
-|value|交易的以太数量|
-|signature|方法签名|
-|data|编码好的 calldata|
-|eta|解锁此交易的时间戳|
+|target|the target to-be-called contract address|
+|value|amount of Eth for this transaction|
+|signature|function signature|
+|data|calldata that was encoded|
+|eta|timestamp to unlock the transaction|
 
-返回值解释：
+Callback:
 
-|返回值|描述|
+|Name|Description|
 |--|--|
-|bytes|执行外部调用的结果回执|
+|bytes|The callback message from calling target contract|
 
-任何将调用权限交给此合约的合约方法，都可以使用此合约的时间锁功能。以上三个步骤都只能够由项目的owner调用。
+All contracts granting call permission to the this contract can use timelock functions. All three above mentioned step can only be called by project owners.
 
-# 合约安全
+# Smart Contract Security
 
-## 合约依赖来源
+## Source of Smart Contract
 
-所有合约依赖的库都来自[Openzepplin](https://docs.openzeppelin.com/contracts/4.x/)，Openzepplin经过多方的审核，和各方长时间的印证，被证明是安全的。一下是信任Openzepplin的机构：
+All contract-dependent libraries come from [Openzepplin](https://docs.openzeppelin.com/contracts/4.x/). Openzepplin was long audited by multiple institutions, it was proven safe. The following is a list of projects trusting Openzepplin:
 
 ![image](./images/oz.png)
 
-并且Openzepplin为多方机构做过安全审计报告，包括但不限于如下：
+Oppenzepplin has also conducted security auditing report for multiple institutions, including but not limited to:
 
 ![image](./images/oz1.png)
 
-## 权限分离管理
+## Permission Separation
 
-合约中，有一部分管理功能是及时性比较高的，比如紧急暂停权限。与此同时，类似合约的参数配置，及时性要求就没有那么的高。
+Among the smart contracts, some requires immediate managing, such as immediate shut down permission, others, like parameters set up of a smart contract, are not that time-sensitive.
 
-为了安全起见，将这两类权限分开在不同的地址中，分别称为 `controller` 和 `owner`。
+For safety purpose, we designate two permission roles with different addresses: `controller` and `owner`.
 
-owner拥有更高的权限，拥有的权限如下：
+Owners have higher authority, their permissions are as follow:
 
-* 可以设置并且更改controller
-* 可以新增和删除签名机地址
-* 解锁合约的ETH
+* Setting up or changing controller
+* Adding or removing address of the signature machine
+* Unlocking ETH in the contract
 
+Controllers have following permissions:
 
-controller拥有的权限如下：
+* Temporarily suspend deposit and withdraw functions of the smart contract
 
-* 紧急暂停合约的充提现功能。
+Owners are responsible for initialize parameters in the beginning of developing a smart contract; controllers work with the risk control system, shutting down deposit and withdraw functions in case of emergency to prevent significant loss.
 
-owner则负责在合约创建初期，进行参数的初始化；controller配合风控系统，在发生重大安全事故时将合约充提现功能暂停，将损失控制到最小。
+## Others
 
-
-
-
-## 其他
-
-[NFT treasure合约](#金库合约)中，充值交易会记录充值者地址，只有充值者有权限提出对应的NFT，这样就在合约层面确保NFT不会被错误的地址转走。
+In the [NFT treasure contract](#treasure-contract), the depositing transaction will record the address of the depositor, only the depositor has the permission to withdraw corresponding NFT. Such design ensures on the contract level that the NFT will not be falsely withdrawn and transferred.
