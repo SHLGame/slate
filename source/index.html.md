@@ -15,15 +15,16 @@ meta:
 
 # Introduction
 
-这里将会介绍Connexion所有合约的技术细节。其中包括FT、NFT、Treasure和Market几部分内容。
+We will introduce the technical details of all Connexion smart contracts, including parts like FT, NFT, Treasury vaults and Marketplace. 
+
 
 # ERC20 Token Contract
  
- 除了FT代币的基础功能以外，还需要提供一键创建代币合约的功能。为了实现这个功能，我们编写了3个合约，分别是：`GameERC20Factory.sol`、 `GameERC20Proxy.sol` 和 `GameERC20Token.sol`，下面是他们的关系图：
+ Other than the basic functions of a Fungible Token, we also need to provide a one-click smart contract creation function. In order to realize this, we have developed three contracts, in the name of GameERC20Factory.sol, GameERC20Proxy.sol and GameERC20Token.sol. Their relationships are shown as below:
 
- ![image ERC20关系图](./images/ERC20.png)
+ ![image ERC20 relation chart](./images/ERC20.png)
 
- 对 delegatecall 熟悉的人应该知道：合约A通过delegatecall调用合约B，交易会按照合约B的逻辑执行，但是执行的上下文和更改的状态都在合约A中，我们称合约A为代理合约，合约B为逻辑合约。`GameERC20Proxy`就是代理合约，存储token的状态，用户可以通过`GameERC20Factory`创建任意个`GameERC20Proxy`的实例，每个实例就是一个token，所有通过`GameERC20Factory`创建出来的token的逻辑合约都是`GameERC20Token`。
+ For those who are unfamiliar with the delegatecall instruction, here is a simple explanation. Smart Contract A calls Smart Contract B via the delegatecall instruction, the transaction will execute according to the logics set by Contract B, however, the contexts of the execution and its status change are stored in Contract A. We call Contract A Proxy contract，Contract B Implementation contract. GameERC20Proxy is the Proxy contract, storing token status. Users are able to create any number of GameERC20Proxy cases via GameERCFactory, every case is a token. All tokens created by GameERC20Factory have the same implementation contract in GameERC20Token.
 
 ## GameERC20Factory
 
@@ -35,7 +36,7 @@ meta:
 uint256 public vaultCount;
 ```
 
- vaultCount表示已经创建的token总数
+ Vaultcount represents the total generated token count
 
 #### vaults
 
@@ -43,7 +44,7 @@ uint256 public vaultCount;
 mapping(uint256 => address) public vaults;
 ```
 
- vaults存储已经创建的token地址
+ Vaults store the address for the generated tokens
 
 #### logic
 
@@ -51,7 +52,8 @@ mapping(uint256 => address) public vaults;
 address public immutable logic;
 ```
 
- logic是所有代币的逻辑合约地址，使用不可变的变量存储逻辑合约地址保证每个工厂创建出来的代币逻辑合约都是一样的。
+ Logic is the logic contract address for all tokens. We use an unchangeable variable to store the logic contract addresses to make sure that the token logic address is the same for every token created by factory.
+
 
 ### Functions
 
@@ -117,7 +119,7 @@ _index | uint256 | token index number in the underlying set
 address public immutable logic;
 ```
 
- logic是所有代币的逻辑合约地址，使用不可变的变量存储逻辑合约地址保证token的合约逻辑不可以更改，可升级的合约就是通过改变logic合约实现的。
+ Logic is the logic contract address for all tokens. We use an unchangeable variable to store the logic contract address to make sure that the logic of the token cannot be changed. Upgradeable smart contracts are realized by changing logic contracts.
 
 ### Functions
 
@@ -143,13 +145,13 @@ fallback() external payable {
 }
 ```
 
- fallback是实现代理合约的关键函数，代理合约的概念是在[EIP1167协议](https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1167.md)中产生，有如下几个特性：
+ fallback is an important function to realize proxy contracts. The concepts of a proxy contract is outlined in [EIP1167](https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1167.md), with the following characteristics:
 
- 1. 调用成功后返回true，无法管理返回的数据；
- 2. 当调用的方法在代理合约中不存在时，合约会调用`fallback`函数。可以编写`fallback`函数的逻辑处理这种情况。代理合约使用自定义的`fallback`函数将调用请求重定向到逻辑合同中。
- 3. 每当合约A将调用代理到另一个合同B时，它都会在合约A的上下文中执行合约B的代码。这意味着将保留msg.value和msg.sender值，并且每次存储修改都会影响合约A。
+ 1. Return true when successfully called, the returned data cannot be managed
+ 2. When the calling function does not exist in the proxy contract, the contract will call fallback function instead. We can set up the logic in fallback function to deal with such issues. Proxy contracts using a customized fallback function will redirect the call request to the logic contract.
+ 3. Every time when Contract A use delegatecall function to call Contract B, the transaction will be implemented in the context set up by contract A, using logics from Contract B. The transaction will keep the data msg.value and msg.sender in Contract A. Every alteration to the storage will affect Contract A. The status in Contract B will not be changed.
 
- 也可以参考Openzipplin的合约库具体实现[Openzeppelin Proxy](https://github.com/OpenZeppelin/openzeppelin-labs/blob/master/upgradeability_using_eternal_storage/contracts/Proxy.sol)
+ We can also refer to the realization of Openzeppelin smart contract library via [Openzeppelin Proxy](https://github.com/OpenZeppelin/openzeppelin-labs/blob/master/upgradeability_using_eternal_storage/contracts/Proxy.sol).
 
 ## GameERC20Token
 
@@ -161,35 +163,35 @@ function mint(address account, uint256 amount) public onlyOwner {
 }
 ```
 
- 拥有owner权限的地址铸造代币的方法，铸造的总数量将不可以超过预设的总供应量
+ The way for addresses with owner permission to mint  tokens. The total minted amount cannot exceed the default total supply.
 
 Parameters:
 
 Name | Type | Description
 --------- | ------- | -----------
-account | address | 接收铸造代币的地址
-amount | uint256 | 铸造的数量
+account | address | address receiving minted tokens
+amount | uint256 | minted amount
 
 
-# 多游戏通用的 NFT token contract
+# General multi-game NFT token Contract
 
- Loot曾经被定义为NFT的新范式。在合约代码层面，Loot的创新在于它将NFT的属性写在去中心化系统上，很好的解决了传统NFT的Metadata可以被开发者随意变更的问题。在形象艺术方面，Loot刻意将图片省略，使得不同的作者可以各自发挥想象力，用不同的画面来描述同一个Loot。
+ Loot was defined as the new paradigm for NFT. On the smart contract coding level, the innovation of loot rests in that it attempts to record the attributes of NFT on the decentralized system, resolving the problem for normal NFTs, which is that their metadata can be easily modified by their creators. On the artistic level, Loot intentionally omits images, allowing developers to fully use their imagination, portraying different images for the same Loot.
 
- 虽然Loot相较于传统NFT有了很大的进步，但是Loot也有一些不足。Loot的属性种类十分有限，也十分具体。举个例子：第一代Loot中有一个属性是“战斧”，尽管画家们可以任意设计“战斧”的形象，但是它只能是战斧，这样就将画家们的想象力禁锢在这一件事物中。
+ Although Loot demonstrates significant improvements from traditional NFTs, it still has its weaknesses. The attribute types in Loot are quite limited, and concrete. For instance, “Warring Axe” is an attribute from the first generation of Loot. Though artists are able to freely design the visualization of Warring Axe, it can only be a Warring Axe. The imaginations of artistics are constrained into that specific object. 
 
- 我们基于Loot的优缺点，做了进一步的创新，使用数字来代替Loot中的文字属性，并且单个NFT拥有属性的数量将不再受限制，我们称为**GameLoot**。这样，同一个NFT将可以在不同的故事剧本中成为完全不一样的角色，也为成为不同游戏世界的互通的桥梁。
+ Inspired by Loot’s strengths and weaknesses, we made a new innovation, replacing the text attributes in Loot with numbers and unbounding the count of attributes in a single NFT. Thus the same NFT can act as different roles in different scripts, becoming a bridge connecting different game metaverses. 
 
- NFT的属性在每一个游戏世界的含义会由 Registry 合约来托管，用户可以在链上查询对应的数值。我们还会提供`TokenURIGame`接口，来生成包含属性name的SVG，下面来看看这两个合约之间的关系：
+ The meaning of NFT properties in each game world will be hosted by the Registry contract, and users can query the corresponding values on the chain. We will also provide the `TokenURIGame` function to generate an SVG containing the attribute name, let's take a look at the relationship between these two contracts:
 
  ![image](./images/registry.svg)
 
- Registry合约代表某个具体游戏的数据，当玩家想查看自己的NFT在某一特定游戏中的形象，就可以通过`TokenURIGame`方法查看。TokenURI返回的是不包含任何游戏元素的元数据，为了满足EIP721标准、保证能够在Opensea上正常显示。
+ The Registry contract represents the data of a specific game. When a player wants to view the image of his NFT in a specific game, he can view it through the `TokenURIGame` method. TokenURI returns metadata that does not contain any game elements. In order to meet the EIP721 standard and ensure that it can be displayed normally on Opensea.
 
- 关于connecxion的NFT，我们创建了一个适用于GameFi的NFT新协议[Non-fungible Token for GameFi](https://github.com/bnb-chain/BEPs/pull/129)。
+ For Connexion, we created a GameFi specific NFT Standard:[Non-fungible Token for GameFi](https://github.com/bnb-chain/BEPs/pull/129)。
 
 ## Storage variable
 
-> 存储属性的数据结构
+> Data structure to store properties
 
 ```solidity
 struct AttributeBaseData {
@@ -208,19 +210,19 @@ mapping(uint128 => AttributeBaseData) internal _attrBaseData;
 mapping(uint256 => AttributeData[]) internal _attrData;
 ```
 
-`AttributeBaseData`存储的是单个属性的精度，为了解决小数问题。
+`AttributeBaseData` stores the precision of a single attribute, resolving the issue with decimals.
 
-`AttributeData`存储的是属性ID和属性值
+`AttributeData` stores the attribute ID and attribute value.
 
-`_attrBaseData`是一个键值对，key为属性ID，值为属性的基础数据（精度、是否被创建），用来查询属性的精度
+`_attrBaseData` is a key-value pair, key is the attribute ID, value is the attribute’s basic info (precision, created or not), used to search an attribute's precision.
 
-`_attrData`也是一个键值对，key为tokenID，值为此NFT具有的属性数组
+`_attrData` is also a key-value pair, key is tokenID, value is the NFT’s attribute array.
 
 ## Functions
 
 ### tokenURI
 
-> 通过SVG展示NFT属性的方法
+> A method of displaying NFT attributes through SVG
 
 ```solidity
 function tokenURI(uint256 tokenID) override public view returns (string memory) {
@@ -257,23 +259,23 @@ function tokenURI(uint256 tokenID) override public view returns (string memory) 
 }
 ```
 
- 这里同样采用Loot的方式，使用SVG展示NFT的属性。
+ Similar to Loot, we use SVG to display an NFT’s attributes.
  
 Parameters:
 
 Name | Type | Description
 --------- | ------- | -----------
-tokenID | uint256 | NFT 的唯一标识
+tokenID | uint256 | NFT’s unique ID
 
 Return Values:
 
 Name | Type | Description
 --------- | ------- | -----------
-output | string | SVG数据经过Base64编码后的数据
+output | string | String value after Base64 conversion of the SVG data
 
 ### create
 
-> 创建单个属性
+> Create a single property
 
 ```solidity
 function create(uint128 attrID_, uint8 decimals_) override public onlyOwner {
@@ -281,18 +283,18 @@ function create(uint128 attrID_, uint8 decimals_) override public onlyOwner {
 }
 ```
 
- 只有owner拥有属性的创建权限，已经存在的属性ID不可以被再次创建。
+ Only addresses with owner permission can create attributes, existing attributeID cannot be re-created.
  
 Parameters:
 
 Name | Type | Description
 --------- | ------- | -----------
-attrID_ | uint128 | NFT属性的唯一标识
-decimals_ | uint8 | 属性的精度
+attrID_ | uint128 | NFT attribute’s unique ID
+decimals_ | uint8 | precision of the attribute
 
 ### createBatch
 
-> 创建多个属性
+> Create multiple properties
 
 ```solidity
 function createBatch(uint128[] memory attrIDs_, uint8[] memory decimals_) override public onlyOwner {
@@ -300,18 +302,18 @@ function createBatch(uint128[] memory attrIDs_, uint8[] memory decimals_) overri
 }
 ```
 
- 只有owner拥有属性的创建权限，已经存在的属性ID不可以被再次创建。
+ Only addresses with owner permission can create attributes, existing attributeID cannot be re-created.
  
 Parameters:
 
 Name | Type | Description
 --------- | ------- | -----------
-attrIDs_ | uint128[] | NFT属性的唯一标识数组
-decimals_ | uint8[] | 属性的精度数组，每个元素的下标与attrIDs_的元素一一对应
+attrIDs_ | uint128[] | NFT attribute’s unique ID arrays
+decimals_ | uint8[] | precision of the attributes, correspondent to every attribute
 
 ### attach
 
-> 将单个属性添加到NFT属性列表中
+> Add a single attribute to the NFT attribute list
 
 ```solidity
 function attach(uint256 tokenID_, uint128 attrID_, uint128 value_) override public onlyTreasure {
@@ -319,19 +321,19 @@ function attach(uint256 tokenID_, uint128 attrID_, uint128 value_) override publ
 }
 ```
 
- 将某一个属性和对应的值添加到NFT属性列表中，只有[treasure合约](#金库合约)才拥有调用此方法的权限。
+ Add an attribute and its corresponding value to the NFT attributes list, only [treasure contract](#treasure-contract) have the permission to call this function
  
 Parameters:
 
 Name | Type | Description
 --------- | ------- | -----------
-tokenID_ | uint256 | NFT 的唯一标识
-attrID_ | uint128 | NFT属性的唯一标识
-value_ | uint128 | NFT属性的值
+tokenID_ | uint256 | NFT’s unique ID
+attrID_ | uint128 | NFT attribute’s unique ID
+value_ | uint128 | NFT attribute’s value
 
 ### attachBatch
 
-> 将多个属性添加到NFT属性列表中
+> Add multiple attributes to NFT attribute list
 
 ```solidity
 function attachBatch(uint256 tokenID_, uint128[] memory attrIDs_, uint128[] memory values_) override public onlyTreasure {
@@ -339,19 +341,19 @@ function attachBatch(uint256 tokenID_, uint128[] memory attrIDs_, uint128[] memo
 }
 ```
 
- 将某多个属性和对应的值添加到NFT属性列表中，只有[treasure合约](#金库合约)才拥有调用此方法的权限。
+ Add a batch of attributes and their corresponding values to the NFT attribute list, only [treasure contract](#treasure-contract) have the permission to call this function
  
 Parameters:
 
 Name | Type | Description
 --------- | ------- | -----------
-tokenID_ | uint256 | NFT 的唯一标识
-attrIDs_ | uint128[] | NFT属性的唯一标识数组
-values_ | uint128[] | NFT属性值数组，每个元素下标与attrIDs_元素的对应
+tokenID_ | uint256 | NFT’s unique ID
+attrIDs_ | uint128[] | NFT attribute array’s unique ID
+values_ | uint128[] | NFT attribute’s value array, corresponding to every attribute array’s unique ID
 
 ### remove
 
-> 将单个属性从NFT属性列表中移除
+> Remove a single attribute from the NFT attribute list
 
 ```solidity
 function remove(uint256 tokenID_, uint256 attrIndex_) override public onlyTreasure {
@@ -359,18 +361,18 @@ function remove(uint256 tokenID_, uint256 attrIndex_) override public onlyTreasu
 }
 ```
 
- 通过属性的下标，将对应的属性从NFT属性列表中移除，若下标超出属性数组范围，交易会执行失败，只有[treasure合约](#金库合约)才拥有调用此方法的权限。
+ Removing attributes from the NFT attribute list via attribute index. If the index is beyond the attribute array’s range, this function will fail. Only [treasure contract](#treasure-contract) have the permission to call this function.
  
 Parameters:
 
 Name | Type | Description
 --------- | ------- | -----------
-tokenID_ | uint256 | NFT 的唯一标识
-attrIndex_ | uint256 | 对应属性在NFT属性列表中的下标
+tokenID_ | uint256 | NFT’s unique ID
+attrIndex_ | uint256 | Attribute corresponding index in the NFT attribute list
 
 ### removeBatch
 
-> 将多个属性从NFT属性列表中移除
+> Remove multiple attributes from NFT attribute list
 
 ```solidity
 function removeBatch(uint256 tokenID_, uint256[] memory attrIndexes_) override public onlyTreasure {
@@ -378,18 +380,18 @@ function removeBatch(uint256 tokenID_, uint256[] memory attrIndexes_) override p
 }
 ```
 
- 通过多个属性的下标，将对应的属性从NFT属性列表中移除，若下标超出属性数组范围，交易会执行失败，只有[treasure合约](#金库合约)才拥有调用此方法的权限。
+ Removing a batch of attributes from the NFT attribute list via multi attribute indexes. If the indexes are beyond the attribute array’s range, this function will fail. Only [treasure contract](#treasure-contract) can call this function.
  
 Parameters:
 
 Name | Type | Description
 --------- | ------- | -----------
-tokenID_ | uint256 | NFT 的唯一标识
-attrIndexes_ | uint256[] | 对应属性在NFT属性列表中的下标数组
+tokenID_ | uint256 | NFT’s unique ID
+attrIndexes_ | uint256[] | Attribute corresponding index arrays in the NFT attribute list
 
 ### update
 
-> 更新NFT单个属性的值
+> Update the value of an NFT single property
 
 ```solidity
 function update(uint256 tokenID_, uint256 attrIndex_, uint128 value_) override public onlyTreasure {
@@ -397,19 +399,19 @@ function update(uint256 tokenID_, uint256 attrIndex_, uint128 value_) override p
 }
 ```
 
- 通过属性的下标，将对应的属性的值更新，若下标超出属性数组范围，交易会执行失败，只有[treasure合约](#金库合约)才拥有调用此方法的权限。
+ Updaing the value of an attribute via attribute index. If the index is beyond the attribute array’s range, this function will fail. Only [treasure contract](#treasure-contract) can call this function.
  
 Parameters:
 
 Name | Type | Description
 --------- | ------- | -----------
-tokenID_ | uint256 | NFT 的唯一标识
-attrIndex_ | uint256 | 对应属性在NFT属性列表中的下标
-value_ | uint128 | 需要设置的对应属性的新值
+tokenID_ | uint256 | NFT’s unique ID
+attrIndex_ | uint256 | Attribute corresponding index in the NFT attribute list
+value_ | uint128 | Updated value of the attribute
 
 ### updateBatch
 
-> 更新NFT多个属性的值
+> Update the values of multiple properties of an NFT
 
 ```solidity
 function updateBatch(uint256 tokenID_, uint256[] memory attrIndexes_, uint128[] memory values_) override public onlyTreasure {
@@ -417,19 +419,19 @@ function updateBatch(uint256 tokenID_, uint256[] memory attrIndexes_, uint128[] 
 }
 ```
 
- 通过属性的下标，将多个属性的值更新，若下标超出属性数组范围，交易会执行失败，只有[treasure合约](#金库合约)才拥有调用此方法的权限。
+ Updating the value of multiple attributes via attribute indexes. If the indexes are beyond the attribute array’s range, this function will fail.  Only [treasure contract](#treasure-contract) can call this function.
  
 Parameters:
 
 Name | Type | Description
 --------- | ------- | -----------
-tokenID_ | uint256 | NFT 的唯一标识
-attrIndexes_ | uint256[] | 对应属性在NFT属性列表中的下标数组
-values_ | uint128[] | 需要设置的对应属性的新值集合，每个元素下标与attrIndexes_元素的对应
+tokenID_ | uint256 | NFT’s unique ID
+attrIndexes_ | uint256[] | Attribute corresponding index arrays in the NFT attribute list
+values_ | uint128[] | set of updated values for the attribute array, corresponding to every attriIndexes_
 
-# 金库合约
+# Treasure contract
 
-> 其中一个使用ecrecover指令恢复签名者的方法
+> One of the ways to recover the signer using the ecrecover instruction
 
 ```solidity
 function signatureWallet(
@@ -452,22 +454,23 @@ function signatureWallet(
 }
 ```
 
- 金库合约是区块链系统与中心化游戏系统交互的关口，先来看看资产流动关系图：
+ Treasury contract is the interactive portal between the blockchain and the centralized game system, we will first take a look at the asset flow chart:
 
 ![image](./images/assetsFlow.svg) 
  
- 所有从区块链上充值到游戏内部的资产(包括FT和NFT)都是通过将资产锁定在treasure合约中来实现的；同样的，所有从游戏内部提现的资产也是通过解锁treasure合约中的资产来实现的。提现流程图如下：
+ All in-game asset (FT and NFT) deposits from the blockchain are realized through locking up the assets in the treasury contract; Similarly, all withdrawals from the game to the blockchains are realized through unlocking the assets in the treasury contract. The withdrawal flow chart is shown below:
 
  ![image](./images/withdraw.png)
 
- 从图中可以看出，用户需要签名才可以发出有效提现交易。签名在合约中的应用有两方面：ecrecover指令可以恢复签名数据的签名者地址，这样就能验证签名数据的真伪；另外，提现方法是可以被任何用户调用的，为了保证交易可以符合预期地被确认，签名机会对如下数据进行签名：
+ We are able to see that the users require signatures to realize valid withdrawal transactions. Signatures have two applications in the smart contract design; ecrecover command is used to recover the signature data of the signing addressing, thus verifying the validity of the signature; On the other hand, withdrawal method can be called by any parties, in order to guarantee that the transaction can be verified as expected, the signature machine will sign on the following data:
 
 Signed Message | Description
---------- | ------- 
-接收者地址 | 为了防止错误的地址接收到从treasure合约提现出的资产
-金库合约地址 | 为了防止签名在另一个金库合约重用
-代币合约地址 | 确定此签名只能够从treasure合约中转移出一种资产
-不重复的随机数 | 确保此签名只能够使用一次
+--------- | -------
+recipient address | to prevent a false address receiving the withdrawn assets from the treasury
+treasury contract address | to prevent the signature from being used in another treasury
+token contract address | guaratee that the signature can only withdraw one asset from the treasury
+a non-repeated randomized number | 确保此签名只能够使用一次
+
 FT的数量 | 用来控制提现出的金额
 NFT的tokenID | 用来确保将正确的NFT提出
 NFT属性更新后的数据 | 为了防止用户随意更改NFT属性
