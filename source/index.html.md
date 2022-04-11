@@ -837,6 +837,140 @@ function updatePool(uint256 _pid) public {
 
 由于***每份收益***是一直增加的，所以需要变量`rewardDebt`来记录用户之前领取了多少，用户的总收益减去`rewardDebt`就是用户当前可获得的收益。
 
+# 游戏代币解锁合约
+
+游戏代币解锁分两种规则。一种机制是线性释放给白名单。另一种是通过NFT质押来获得质押收益，同时用户也可以在opensea交易用来质押的NFT。
+
+## 白名单线性解锁
+
+合约创建者在创建合约的时候，会将白名单和各个地址的份额写入到合约中。所有白名单的地址，将以匀速的方式解锁自己拥有的所有份额。
+
+> 白名单解锁奖励方法
+
+```solidity
+// unlock
+function unlock() public {
+    // time
+    uint t;
+    if (rights[msg.sender].lastTime == 0) {
+        t = block.timestamp - startTime;
+    } else {
+        t = block.timestamp - rights[msg.sender].lastTime;
+    }
+    rights[msg.sender].lastTime = block.timestamp;
+    // amount
+    uint amount = t * rights[msg.sender].speed;
+    if (amount > rights[msg.sender].amount)
+        amount = rights[msg.sender].amount;
+    rights[msg.sender].amount -= amount;
+    IERC20(token).safeTransferFrom(address(this), msg.sender, amount);
+}
+```
+
+## 质押NFT挖矿合约
+
+此NFT采用[ERC1155协议](https://eips.ethereum.org/EIPS/eip-1155)，只有特定合约的特定tokenID的NFT才可以质押。
+
+### deposit
+
+> 质押方法代码
+
+```solidity
+function deposit(uint256 _pid, uint256 _amount) public {
+    PoolInfo storage pool = poolInfo[_pid];
+    UserInfo storage user = userInfo[_pid][msg.sender];
+    updatePool(_pid);
+    if (user.amount > 0) {
+        uint256 pending = (user.amount * pool.rewardPerShare) /
+            1e12 -
+            user.rewardDebt;
+        safeGameTokenTransfer(msg.sender, pending);
+    }
+    // approve first
+    pool.ticket.safeTransferFrom(
+        address(msg.sender),
+        address(this),
+        pool.ticketID,
+        _amount,
+        "0x0"
+    );
+    user.amount = user.amount + _amount;
+    user.rewardDebt = (user.amount * pool.rewardPerShare) / 1e12;
+    emit Deposit(msg.sender, _pid, _amount);
+}
+```
+
+参数解释：
+
+|参数名|描述|
+|--|--|
+|_pid|质押的池子ID|
+|_amount|质押NFT的数量|
+
+### withdraw
+
+> 提现方法代码
+
+```solidity
+function withdraw(uint256 _pid, uint256 _amount) public {
+    PoolInfo storage pool = poolInfo[_pid];
+    UserInfo storage user = userInfo[_pid][msg.sender];
+    require(user.amount >= _amount, "withdraw: not good");
+    updatePool(_pid);
+    uint256 pending = (user.amount * pool.rewardPerShare) /
+        1e12 -
+        user.rewardDebt;
+    safeGameTokenTransfer(msg.sender, pending);
+    user.amount = user.amount - _amount;
+    user.rewardDebt = (user.amount * pool.rewardPerShare) / 1e12;
+    // unlock ticket
+    pool.ticket.safeTransferFrom(
+        address(this),
+        address(msg.sender),
+        pool.ticketID,
+        _amount,
+        "0x0"
+    );
+    emit Withdraw(msg.sender, _pid, _amount);
+}
+```
+
+参数解释：
+
+|参数名|描述|
+|--|--|
+|_pid|提现来源池子的ID|
+|_amount|提现NFT的数量|
+
+### emergencyWithdraw
+
+> 紧急提现方法代码
+
+```solidity
+function emergencyWithdraw(uint256 _pid) public {
+    PoolInfo storage pool = poolInfo[_pid];
+    UserInfo storage user = userInfo[_pid][msg.sender];
+    pool.ticket.safeTransferFrom(
+        address(this),
+        address(msg.sender),
+        pool.ticketID,
+        user.amount,
+        "0x0"
+    );
+    emit EmergencyWithdraw(msg.sender, _pid, user.amount);
+    user.amount = 0;
+    user.rewardDebt = 0;
+}
+```
+
+当出现无法预料的紧急情况时时，用户可以通过这个方法提现出本金，放弃之前的收益，提现后收益会清零。
+
+参数解释：
+
+|参数名|描述|
+|--|--|
+|_pid|提现来源池子的ID|
+
 # 时间锁合约
 
 ## 时间锁的意义
